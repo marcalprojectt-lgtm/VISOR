@@ -12,7 +12,6 @@ body {
   overflow: hidden;
 }
 
-/* HUD */
 #hud {
   position: absolute;
   top: 20px;
@@ -22,7 +21,6 @@ body {
   padding: 10px;
 }
 
-/* PANEL */
 #panel {
   position: absolute;
   top: 20px;
@@ -35,97 +33,78 @@ body {
   display: none;
 }
 
-/* STATUS */
 #status {
   position: absolute;
   bottom: 20px;
   left: 20px;
   color: orange;
 }
-
-#error {
-  position: absolute;
-  bottom: 50px;
-  left: 20px;
-  color: red;
-}
 </style>
 </head>
 
 <body>
 
-<div id="hud">🛰️ WAR ROOM<br><span id="sys">INIT...</span></div>
+<div id="hud">🛰️ WAR ROOM<br><span id="sys">ACTIVO</span></div>
+
 <div id="panel">
   <h3 id="title"></h3>
   <a id="link" target="_blank">Ver fuente</a>
 </div>
+
 <div id="status"></div>
-<div id="error"></div>
 <div id="globeViz"></div>
 
 <script src="https://unpkg.com/globe.gl"></script>
 
 <script>
 
-const sys = document.getElementById("sys");
 const statusEl = document.getElementById("status");
-const errorEl = document.getElementById("error");
 
-let globe;
+const globe = Globe()(document.getElementById("globeViz"))
+  .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-night.jpg")
+  .backgroundColor("#000")
 
-function init() {
-  try {
+/* 🔥 DATOS */
+const data = [
+  { title: "Airstrike Ukraine", lat:48, lng:31, link:"#"},
+  { title: "Gaza conflict", lat:31.5, lng:34.5, link:"#"},
+  { title: "Syria combat", lat:34, lng:38, link:"#"},
+  { title: "Iran tension", lat:32, lng:53, link:"#"},
+  { title: "North Korea missile", lat:40, lng:127, link:"#"}
+];
 
-    sys.innerText = "CARGANDO GLOBO...";
+/* 🔴 PUNTOS (VISUAL FINO + HITBOX GRANDE) */
+globe.pointsData(data)
+  .pointColor(() => "#00ff9d")
+  .pointAltitude(0.02)
+  .pointRadius(0.2) // 👈 IMPORTANTE: grande para click
 
-    globe = Globe()(document.getElementById("globeViz"))
-      .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-night.jpg") // ✔ ESTA SÍ FUNCIONA
-      .backgroundColor("#000");
+/* 🟢 RINGS */
+globe.ringsData(data)
+  .ringColor(() => t => `rgba(0,255,157,${1-t})`)
+  .ringMaxRadius(3)
+  .ringPropagationSpeed(2)
+  .ringRepeatPeriod(2000);
 
-    sys.innerText = "GLOBO OK";
+/* 🎯 HOVER (MEJORA UX) */
+globe.onPointHover(p => {
+  document.body.style.cursor = p ? "pointer" : "default";
+});
 
-    loadData();
+/* 🧠 CLICK REAL */
+globe.onPointClick((point) => {
+  if (!point) return;
 
-  } catch (e) {
-    errorEl.innerText = "ERROR 3D: " + e.message;
-    console.error(e);
-  }
-}
+  const panel = document.getElementById("panel");
 
-/* DATOS */
-function loadData() {
+  document.getElementById("title").innerText = point.title;
+  document.getElementById("link").href = point.link || "#";
 
-  sys.innerText = "MODO DEMO";
+  panel.style.display = "block";
+});
 
-  const data = [
-    { title: "Airstrike Ukraine", lat:48, lng:31 },
-    { title: "Gaza conflict", lat:31.5, lng:34.5 },
-    { title: "Syria combat", lat:34, lng:38 },
-    { title: "Iran tension", lat:32, lng:53 },
-    { title: "North Korea missile", lat:40, lng:127 }
-  ];
-
-  globe.pointsData(data)
-    .pointColor(() => "#00ff9d")
-    .pointAltitude(0.02)
-    .pointRadius(0.15);
-
-  globe.ringsData(data)
-    .ringColor(() => t => `rgba(0,255,157,${1-t})`)
-    .ringMaxRadius(3)
-    .ringPropagationSpeed(2)
-    .ringRepeatPeriod(2000);
-
-  globe.onPointClick(p => {
-    const panel = document.getElementById("panel");
-    document.getElementById("title").innerText = p.title;
-    panel.style.display = "block";
-  });
-
-  statusEl.innerText = "Eventos: " + data.length;
-}
-
-init();
+/* INFO */
+statusEl.innerText = "Eventos: " + data.length;
 
 </script>
 </body>
