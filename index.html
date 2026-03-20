@@ -2,17 +2,29 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>Military Intelligence System</title>
+<title>INTELLIGENCE WAR ROOM</title>
 
 <style>
 body {
   margin: 0;
-  background: black;
+  background: #000;
   font-family: monospace;
   overflow: hidden;
 }
 
-/* PANEL INFO */
+/* HUD */
+#hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: #00ff9d;
+  border: 1px solid #00ff9d;
+  padding: 12px;
+  background: rgba(0,0,0,0.8);
+  box-shadow: 0 0 20px #00ff9d;
+}
+
+/* PANEL */
 #panel {
   position: absolute;
   top: 20px;
@@ -23,18 +35,11 @@ body {
   padding: 15px;
   color: #00ff9d;
   display: none;
-  box-shadow: 0 0 15px #00ff9d;
+  box-shadow: 0 0 20px #00ff9d;
 }
 
-/* HUD */
-#hud {
-  position: absolute;
-  top: 20px;
-  left: 20px;
+#panel a {
   color: #00ff9d;
-  border: 1px solid #00ff9d;
-  padding: 10px;
-  box-shadow: 0 0 10px #00ff9d;
 }
 
 /* STATUS */
@@ -51,8 +56,8 @@ body {
 <body>
 
 <div id="hud">
-🛰️ MONITOR MILITAR 3.0<br>
-<span id="systemStatus">INICIANDO...</span>
+🛰️ WAR ROOM 3.0<br>
+<span id="systemStatus">INICIALIZANDO...</span>
 </div>
 
 <div id="panel">
@@ -67,99 +72,116 @@ body {
 
 <script>
 
-const WORKER_URL = "TU_WORKER_URL"; // ⚠️ CAMBIAR
+const WORKER_URL = "https://example.com"; // ❌ NO HACE FALTA CAMBIARLO (usa demo si falla)
 
 const statusEl = document.getElementById("status");
 const sys = document.getElementById("systemStatus");
 
-/* 🌍 GLOBO */
+/* 🌍 GLOBO ESTÉTICA INTELIGENCIA */
 const globe = Globe()(document.getElementById("globeViz"))
-  .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+  .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+  .bumpImageUrl('//unpkg.com/three-globe/example/img/earth-topology.png')
   .backgroundColor('#000000')
-  .pointAltitude(0.008)
-  .pointRadius(0.08)
+  .showAtmosphere(true)
+  .atmosphereColor('#00ff9d')
+  .atmosphereAltitude(0.15)
+  .pointAltitude(0.01)
+  .pointRadius(0.06)
   .pointColor(() => "#00ff9d");
 
-/* 🎯 DATOS */
+/* 🚀 CARGA DATOS */
 async function loadData() {
   try {
     sys.innerText = "CONECTANDO INTEL...";
 
     const res = await fetch(WORKER_URL);
+    if (!res.ok) throw new Error("fail");
+
     const data = await res.json();
 
-    const mapped = data.map(d => {
-      const coords = getCoords(d.title);
-
-      return {
-        lat: coords.lat,
-        lng: coords.lng,
-        title: d.title || "Sin título",
-        link: d.link || "#"
-      };
-    });
-
-    globe.pointsData(mapped);
-
-    /* 🔴 RING EFECT */
-    globe.ringsData(mapped)
-      .ringColor(() => t => `rgba(0,255,157,${1-t})`)
-      .ringMaxRadius(2)
-      .ringPropagationSpeed(1.2)
-      .ringRepeatPeriod(1800);
-
-    globe.onPointClick(p => {
-      showPanel(p);
-    });
-
-    sys.innerText = "SISTEMA ACTIVO";
-    statusEl.innerText = "Eventos detectados: " + mapped.length;
+    processData(data);
 
   } catch (e) {
-    console.error(e);
-    retry();
+
+    console.warn("⚠️ SIN BACKEND → MODO DEMO");
+
+    sys.innerText = "MODO DEMO ACTIVO";
+
+    /* 🔥 MUCHOS EVENTOS PARA QUE SE VEA PRO */
+    const fakeData = [
+      { title: "Airstrike in Ukraine", link: "#" },
+      { title: "Combat in Gaza Strip", link: "#" },
+      { title: "Missile launch North Korea", link: "#" },
+      { title: "Military operation Syria", link: "#" },
+      { title: "Troops mobilized Russia", link: "#" },
+      { title: "Conflict escalation Iran", link: "#" },
+      { title: "Border clash India Pakistan", link: "#" },
+      { title: "Naval tension China Sea", link: "#" },
+      { title: "Attack reported Israel", link: "#" },
+      { title: "Security incident Turkey", link: "#" }
+    ];
+
+    processData(fakeData);
   }
 }
 
-/* 🔁 RETRY */
-function retry() {
-  sys.innerText = "REINTENTANDO CONEXIÓN...";
-  setTimeout(loadData, 4000);
+/* 📊 PROCESAR */
+function processData(data) {
+
+  const mapped = data.map(d => {
+    const coords = getCoords(d.title);
+
+    return {
+      lat: coords.lat,
+      lng: coords.lng,
+      title: d.title,
+      link: d.link
+    };
+  });
+
+  globe.pointsData(mapped);
+
+  globe.ringsData(mapped)
+    .ringColor(() => t => `rgba(0,255,157,${1-t})`)
+    .ringMaxRadius(2.5)
+    .ringPropagationSpeed(1.3)
+    .ringRepeatPeriod(2000);
+
+  globe.onPointClick(p => showPanel(p));
+
+  statusEl.innerText = "Eventos detectados: " + mapped.length;
 }
 
-/* 📍 GEO DETECCIÓN MEJORADA */
+/* 📍 GEO INTEL */
 function getCoords(text) {
 
   const map = {
-    "ukraine": [48,31],
-    "russia": [60,90],
-    "israel": [31,35],
-    "gaza": [31.5,34.5],
-    "lebanon": [33.8,35.8],
-    "syria": [34,38],
-    "iran": [32,53],
-    "iraq": [33,44],
-    "afghanistan": [33,66],
-    "china": [35,103],
-    "taiwan": [23,121],
-    "north korea": [40,127],
-    "south korea": [36,128],
-    "japan": [36,138],
-    "india": [21,78],
-    "pakistan": [30,70],
-    "yemen": [15,48],
-    "saudi": [24,45],
-    "egypt": [26,30],
-    "libya": [26,17],
-    "sudan": [15,30],
-    "turkey": [39,35],
-    "france": [46,2],
-    "germany": [51,10],
-    "poland": [52,19],
-    "uk": [55,-3],
-    "usa": [39,-98],
-    "mexico": [23,-102],
-    "brazil": [-14,-51]
+    "ukraine":[48,31],
+    "russia":[60,90],
+    "gaza":[31.5,34.5],
+    "israel":[31,35],
+    "lebanon":[33,35],
+    "syria":[34,38],
+    "iran":[32,53],
+    "iraq":[33,44],
+    "afghanistan":[33,66],
+    "china":[35,103],
+    "taiwan":[23,121],
+    "north korea":[40,127],
+    "south korea":[36,128],
+    "japan":[36,138],
+    "india":[21,78],
+    "pakistan":[30,70],
+    "yemen":[15,48],
+    "saudi":[24,45],
+    "egypt":[26,30],
+    "turkey":[39,35],
+    "france":[46,2],
+    "germany":[51,10],
+    "poland":[52,19],
+    "uk":[55,-3],
+    "usa":[39,-98],
+    "brazil":[-14,-51]
   };
 
   const lower = text.toLowerCase();
@@ -170,14 +192,14 @@ function getCoords(text) {
     }
   }
 
-  /* 🧠 FALLBACK INTELIGENTE */
+  /* fallback global */
   return {
-    lat: (Math.random() * 140 - 70),
-    lng: (Math.random() * 360 - 180)
+    lat: (Math.random()*140-70),
+    lng: (Math.random()*360-180)
   };
 }
 
-/* 📊 PANEL INFO */
+/* 📊 PANEL */
 function showPanel(p) {
   const panel = document.getElementById("panel");
 
