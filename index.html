@@ -1,129 +1,69 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>VISOR 3D - INTELIGENCIA</title>
-  <style>
-    body { margin: 0; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
-    #globeViz { width: 100vw; height: 100vh; cursor: move; }
-    .overlay { position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(0,20,0,0.8); padding: 15px; border: 1px solid #0f0; border-radius: 5px; pointer-events: none; text-shadow: 0 0 5px #0f0; }
-    .title { color: #ff3333; font-weight: bold; font-size: 1.2em; text-shadow: 0 0 5px red; }
-    #info { position: absolute; bottom: 30px; left: 20px; background: rgba(0,0,0,0.9); border: 1px solid #444; color: #fff; padding: 15px; display: none; max-width: 320px; font-family: sans-serif; z-index: 10; border-left: 4px solid #ff3333; box-shadow: 0 0 15px rgba(255,0,0,0.3); }
-  </style>
-  <script src="//unpkg.com/globe.gl"></script>
+    <meta charset="UTF-8">
+    <title>INTELIGENCIA GLOBAL 3D</title>
+    <script src="https://unpkg.com/globe.gl"></script>
+    <style>
+        body { margin: 0; background-color: #000; overflow: hidden; color: #0f0; font-family: monospace; }
+        #globeViz { width: 100vw; height: 100vh; }
+        .radar-panel {
+            position: absolute; top: 20px; left: 20px; 
+            background: rgba(0, 20, 0, 0.9); padding: 15px; 
+            border: 2px solid #0f0; z-index: 100;
+            box-shadow: 0 0 15px #0f0; pointer-events: none;
+        }
+    </style>
 </head>
 <body>
-  
-  <div class="overlay">
-    <div class="title">🛰️ RED DE INTELIGENCIA 3D</div>
-    <div>ESTADO: RASTREO GLOBAL ACTIVO</div>
-    <div id="status" style="color:#fff; font-size: 0.8em; margin-top:5px;">Conectando a satélites...</div>
-  </div>
-  
-  <div id="info"></div>
-  <div id="globeViz"></div>
+    <div class="radar-panel">
+        <b style="color:red">SISTEMA DE RASTREO ACTIVO</b><br>
+        <span>MODO: VIGILANCIA GLOBAL 3D</span><br>
+        <small id="status">INICIALIZANDO...</small>
+    </div>
 
-  <script>
-    const world = Globe()
-      (document.getElementById('globeViz'))
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
-      .backgroundColor('#000000')
-      .pointOfView({ lat: 31.5, lng: 34.8, altitude: 1.8 });
+    <div id="globeViz"></div>
 
-    world.controls().autoRotate = true;
-    world.controls().autoRotateSpeed = 0.6;
+    <script>
+        // Inicializamos el globo con una configuración básica para que NO falle
+        const globe = Globe()
+            (document.getElementById('globeViz'))
+            .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
+            .backgroundColor('#000000');
 
-    async function loadData() {
-        const statusDiv = document.getElementById('status');
-        try {
-            // Intento 1: Conexión principal a la ONU (codificando espacios para evitar errores)
-            const query = "conflict OR attack OR war OR crisis";
-            const url = `https://api.reliefweb.int/v1/reports?appname=visor_militar&query[value]=${encodeURIComponent(query)}&filter[field]=primary_country.location&limit=60&sort[]=date:desc&profile=full`;
-            
-            const res = await fetch(url);
-            if (!res.ok) throw new Error("API ONU caída");
-            const json = await res.json();
+        async function cargarInteligencia() {
+            const status = document.getElementById('status');
+            try {
+                // Usamos la red de la ONU (ReliefWeb)
+                const response = await fetch('https://api.reliefweb.int/v1/reports?appname=visor&limit=50&sort[]=date:desc');
+                const data = await response.json();
+                
+                // Filtramos datos que tengan coordenadas
+                const points = data.data
+                    .filter(d => d.fields && d.fields.primary_country && d.fields.primary_country.location)
+                    .map(d => ({
+                        lat: d.fields.primary_country.location.lat,
+                        lng: d.fields.primary_country.location.lon,
+                        name: d.fields.title,
+                        color: d.fields.title.toLowerCase().includes('attack') ? 'red' : 'orange'
+                    }));
 
-            const pointsData = [];
-            json.data.forEach(alerta => {
-                const campos = alerta.fields;
-                if(campos.primary_country && campos.primary_country.location) {
-                    const pais = campos.primary_country.name;
-                    let isHighPriority = true;
-                    let pointColor = '#ff1a1a'; // Rojo
-                    let pointSize = 0.5;
+                globe.pointsData(points)
+                    .pointColor('color')
+                    .pointAltitude(0.1)
+                    .pointRadius(0.5);
 
-                    // Países constantes = menos prioridad visual
-                    const zonasConstantes = ['State of Palestine', 'Israel', 'Ukraine', 'Sudan', 'Myanmar', 'Syrian Arab Republic'];
-                    if (zonasConstantes.includes(pais)) {
-                        isHighPriority = false;
-                        pointColor = '#ffaa00'; // Naranja
-                        pointSize = 0.15;
-                    }
-
-                    pointsData.push({
-                        lat: campos.primary_country.location.lat,
-                        lng: campos.primary_country.location.lon,
-                        size: pointSize, color: pointColor, pais: pais,
-                        titulo: campos.title, fecha: new Date(campos.date.created).toLocaleDateString(),
-                        link: campos.url, priority: isHighPriority
-                    });
-                }
-            });
-
-            dibujarPuntos(pointsData);
-            statusDiv.innerText = "SATÉLITES SINCRONIZADOS (ONU)";
-
-        } catch(e) {
-            // Intento 2 (Fallback): Si la ONU falla, cargamos la red global secundaria al instante
-            statusDiv.innerText = "ERROR ONU. ENRUTANDO A RED SECUNDARIA...";
-            fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson')
-            .then(r => r.json())
-            .then(json => {
-                const pointsData = json.features.map(f => ({
-                    lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
-                    size: f.properties.mag / 10,
-                    color: f.properties.mag > 5.5 ? '#ff1a1a' : '#ffaa00',
-                    pais: f.properties.place, titulo: f.properties.title,
-                    fecha: new Date(f.properties.time).toLocaleDateString(),
-                    link: f.properties.url, priority: f.properties.mag > 5.5
-                }));
-                dibujarPuntos(pointsData);
-                statusDiv.innerText = "SATÉLITES SINCRONIZADOS (RED ALTERNATIVA)";
-            });
+                status.innerText = "CONEXIÓN ESTABLECIDA - DATOS CARGADOS";
+                status.style.color = "#0f0";
+            } catch (err) {
+                status.innerText = "ERROR DE RED - REINTENTANDO...";
+                status.style.color = "red";
+            }
         }
-    }
 
-    // Función para renderizar el 3D
-    function dibujarPuntos(data) {
-        world.pointsData(data)
-          .pointAltitude(d => d.size)
-          .pointColor('color')
-          .pointRadius(d => d.size * 1.5)
-          .onPointClick(d => {
-              world.controls().autoRotate = false; 
-              const infoDiv = document.getElementById('info');
-              infoDiv.style.display = 'block';
-              infoDiv.innerHTML = `
-                <b style="color:${d.color}; font-size:1.1em;">${d.priority ? '⚠️ ALERTA CRÍTICA INESPERADA' : '📡 REPORTE DETECTADO'}</b><br>
-                <hr style="border: 0.5px solid #444;">
-                <b style="color:#aaa;">ZONA:</b> ${d.pais}<br>
-                <b style="color:#aaa;">FECHA:</b> ${d.fecha}<br>
-                <div style="margin-top:8px; font-size:0.9em; line-height:1.4;">${d.titulo}</div>
-                <hr style="border: 0.5px solid #444;">
-                <a href="${d.link}" target="_blank" style="color: #4da6ff; text-decoration: none; font-weight:bold;">[+] VER INFORME OFICIAL</a>
-              `;
-          });
-
-        const highPriorityData = data.filter(d => d.priority);
-        world.ringsData(highPriorityData)
-          .ringColor(() => '#ff0000')
-          .ringMaxRadius(3)
-          .ringPropagationSpeed(1)
-          .ringRepeatPeriod(800);
-    }
-
-    loadData();
-  </script>
+        cargarInteligencia();
+        // Centrar en el mundo
+        globe.pointOfView({ altitude: 2.5 });
+    </script>
 </body>
 </html>
