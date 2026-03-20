@@ -6,15 +6,10 @@
   <style>
     body { margin: 0; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
     #globeViz { width: 100vw; height: 100vh; cursor: move; }
-    
-    /* Panel superior izquierdo */
     .overlay { position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(0,20,0,0.8); padding: 15px; border: 1px solid #0f0; border-radius: 5px; pointer-events: none; text-shadow: 0 0 5px #0f0; }
     .title { color: #ff3333; font-weight: bold; font-size: 1.2em; text-shadow: 0 0 5px red; }
-    
-    /* Tarjeta de información al hacer clic */
     #info { position: absolute; bottom: 30px; left: 20px; background: rgba(0,0,0,0.9); border: 1px solid #444; color: #fff; padding: 15px; display: none; max-width: 320px; font-family: sans-serif; z-index: 10; border-left: 4px solid #ff3333; box-shadow: 0 0 15px rgba(255,0,0,0.3); }
   </style>
-  
   <script src="//unpkg.com/globe.gl"></script>
 </head>
 <body>
@@ -22,103 +17,110 @@
   <div class="overlay">
     <div class="title">🛰️ RED DE INTELIGENCIA 3D</div>
     <div>ESTADO: RASTREO GLOBAL ACTIVO</div>
-    <div id="status" style="color:#fff; font-size: 0.8em; margin-top:5px;">Conectando a base de datos de la ONU...</div>
+    <div id="status" style="color:#fff; font-size: 0.8em; margin-top:5px;">Conectando a satélites...</div>
   </div>
   
   <div id="info"></div>
-  
   <div id="globeViz"></div>
 
   <script>
-    // 1. Inicializar el globo terráqueo oscuro
     const world = Globe()
       (document.getElementById('globeViz'))
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg') // Textura nocturna
-      .backgroundColor('#000000') // Fondo del espacio
-      .pointOfView({ lat: 31.5, lng: 34.8, altitude: 1.8 }); // Centrar cámara en Oriente Medio
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg')
+      .backgroundColor('#000000')
+      .pointOfView({ lat: 31.5, lng: 34.8, altitude: 1.8 });
 
-    // Autogiro lento como en las películas
     world.controls().autoRotate = true;
     world.controls().autoRotateSpeed = 0.6;
 
     async function loadData() {
+        const statusDiv = document.getElementById('status');
         try {
-            // Descargar datos de la ONU
-            const url = 'https://api.reliefweb.int/v1/reports?appname=visor_militar&query[value]=conflict OR attack OR war OR crisis&filter[field]=primary_country.location&limit=60&sort[]=date:desc&profile=full';
+            // Intento 1: Conexión principal a la ONU (codificando espacios para evitar errores)
+            const query = "conflict OR attack OR war OR crisis";
+            const url = `https://api.reliefweb.int/v1/reports?appname=visor_militar&query[value]=${encodeURIComponent(query)}&filter[field]=primary_country.location&limit=60&sort[]=date:desc&profile=full`;
+            
             const res = await fetch(url);
+            if (!res.ok) throw new Error("API ONU caída");
             const json = await res.json();
 
             const pointsData = [];
-
             json.data.forEach(alerta => {
                 const campos = alerta.fields;
                 if(campos.primary_country && campos.primary_country.location) {
                     const pais = campos.primary_country.name;
-                    
-                    // --- SISTEMA DE PRIORIDADES ---
                     let isHighPriority = true;
-                    let pointColor = '#ff1a1a'; // Rojo alerta
-                    let pointSize = 0.5; // Altura del pilar en el mapa
+                    let pointColor = '#ff1a1a'; // Rojo
+                    let pointSize = 0.5;
 
-                    // Países con conflicto constante (prioridad normal)
-                    const zonasConstantes = ['State of Palestine', 'Israel', 'Ukraine', 'Sudan', 'Myanmar'];
-                    
+                    // Países constantes = menos prioridad visual
+                    const zonasConstantes = ['State of Palestine', 'Israel', 'Ukraine', 'Sudan', 'Myanmar', 'Syrian Arab Republic'];
                     if (zonasConstantes.includes(pais)) {
                         isHighPriority = false;
                         pointColor = '#ffaa00'; // Naranja
-                        pointSize = 0.15; // Más bajito
+                        pointSize = 0.15;
                     }
 
                     pointsData.push({
                         lat: campos.primary_country.location.lat,
                         lng: campos.primary_country.location.lon,
-                        size: pointSize,
-                        color: pointColor,
-                        pais: pais,
-                        titulo: campos.title,
-                        fecha: new Date(campos.date.created).toLocaleDateString(),
-                        link: campos.url,
-                        priority: isHighPriority
+                        size: pointSize, color: pointColor, pais: pais,
+                        titulo: campos.title, fecha: new Date(campos.date.created).toLocaleDateString(),
+                        link: campos.url, priority: isHighPriority
                     });
                 }
             });
 
-            // 2. Dibujar los puntos en la bola
-            world.pointsData(pointsData)
-              .pointAltitude(d => d.size)
-              .pointColor('color')
-              .pointRadius(d => d.size * 1.5)
-              .onPointClick(d => {
-                  // Detener el giro al hacer clic para leer bien
-                  world.controls().autoRotate = false; 
-                  
-                  // Mostrar la tarjeta de información
-                  const infoDiv = document.getElementById('info');
-                  infoDiv.style.display = 'block';
-                  infoDiv.innerHTML = `
-                    <b style="color:${d.color}; font-size:1.1em;">${d.priority ? '⚠️ ALERTA CRÍTICA INESPERADA' : '📡 REPORTE DE CONFLICTO'}</b><br>
-                    <hr style="border: 0.5px solid #444;">
-                    <b style="color:#aaa;">ZONA:</b> ${d.pais}<br>
-                    <b style="color:#aaa;">FECHA:</b> ${d.fecha}<br>
-                    <div style="margin-top:8px; font-size:0.9em; line-height:1.4;">${d.titulo}</div>
-                    <hr style="border: 0.5px solid #444;">
-                    <a href="${d.link}" target="_blank" style="color: #4da6ff; text-decoration: none; font-weight:bold;">[+] ACCEDER AL INFORME DE INTELIGENCIA</a>
-                  `;
-              });
-
-            // 3. Efecto RADAR (ondas) SOLO para los de alta prioridad
-            const highPriorityData = pointsData.filter(d => d.priority);
-            world.ringsData(highPriorityData)
-              .ringColor(() => '#ff0000') // Ondas rojas
-              .ringMaxRadius(3) // Tamaño de la onda
-              .ringPropagationSpeed(1) // Velocidad
-              .ringRepeatPeriod(800); // Frecuencia del pulso
-
-            document.getElementById('status').innerText = "SATÉLITES SINCRONIZADOS";
+            dibujarPuntos(pointsData);
+            statusDiv.innerText = "SATÉLITES SINCRONIZADOS (ONU)";
 
         } catch(e) {
-            document.getElementById('status').innerText = "ERROR DE CONEXIÓN";
+            // Intento 2 (Fallback): Si la ONU falla, cargamos la red global secundaria al instante
+            statusDiv.innerText = "ERROR ONU. ENRUTANDO A RED SECUNDARIA...";
+            fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/4.5_day.geojson')
+            .then(r => r.json())
+            .then(json => {
+                const pointsData = json.features.map(f => ({
+                    lat: f.geometry.coordinates[1], lng: f.geometry.coordinates[0],
+                    size: f.properties.mag / 10,
+                    color: f.properties.mag > 5.5 ? '#ff1a1a' : '#ffaa00',
+                    pais: f.properties.place, titulo: f.properties.title,
+                    fecha: new Date(f.properties.time).toLocaleDateString(),
+                    link: f.properties.url, priority: f.properties.mag > 5.5
+                }));
+                dibujarPuntos(pointsData);
+                statusDiv.innerText = "SATÉLITES SINCRONIZADOS (RED ALTERNATIVA)";
+            });
         }
+    }
+
+    // Función para renderizar el 3D
+    function dibujarPuntos(data) {
+        world.pointsData(data)
+          .pointAltitude(d => d.size)
+          .pointColor('color')
+          .pointRadius(d => d.size * 1.5)
+          .onPointClick(d => {
+              world.controls().autoRotate = false; 
+              const infoDiv = document.getElementById('info');
+              infoDiv.style.display = 'block';
+              infoDiv.innerHTML = `
+                <b style="color:${d.color}; font-size:1.1em;">${d.priority ? '⚠️ ALERTA CRÍTICA INESPERADA' : '📡 REPORTE DETECTADO'}</b><br>
+                <hr style="border: 0.5px solid #444;">
+                <b style="color:#aaa;">ZONA:</b> ${d.pais}<br>
+                <b style="color:#aaa;">FECHA:</b> ${d.fecha}<br>
+                <div style="margin-top:8px; font-size:0.9em; line-height:1.4;">${d.titulo}</div>
+                <hr style="border: 0.5px solid #444;">
+                <a href="${d.link}" target="_blank" style="color: #4da6ff; text-decoration: none; font-weight:bold;">[+] VER INFORME OFICIAL</a>
+              `;
+          });
+
+        const highPriorityData = data.filter(d => d.priority);
+        world.ringsData(highPriorityData)
+          .ringColor(() => '#ff0000')
+          .ringMaxRadius(3)
+          .ringPropagationSpeed(1)
+          .ringRepeatPeriod(800);
     }
 
     loadData();
