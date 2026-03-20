@@ -1,155 +1,195 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
-  <title>Military Intelligence Globe</title>
-  <style>
-    body {
-      margin: 0;
-      background: black;
-      font-family: Arial;
-      overflow: hidden;
-    }
+<meta charset="UTF-8">
+<title>Military Intelligence System</title>
 
-    #globeViz {
-      width: 100vw;
-      height: 100vh;
-    }
+<style>
+body {
+  margin: 0;
+  background: black;
+  font-family: monospace;
+  overflow: hidden;
+}
 
-    #panel {
-      position: absolute;
-      top: 20px;
-      right: 20px;
-      width: 300px;
-      background: rgba(0,0,0,0.9);
-      border: 1px solid red;
-      padding: 15px;
-      color: white;
-      display: none;
-    }
+/* PANEL INFO */
+#panel {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  width: 320px;
+  background: rgba(0,0,0,0.95);
+  border: 1px solid #00ff9d;
+  padding: 15px;
+  color: #00ff9d;
+  display: none;
+  box-shadow: 0 0 15px #00ff9d;
+}
 
-    #panel a {
-      color: red;
-    }
+/* HUD */
+#hud {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  color: #00ff9d;
+  border: 1px solid #00ff9d;
+  padding: 10px;
+  box-shadow: 0 0 10px #00ff9d;
+}
 
-    #status {
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      color: orange;
-    }
-  </style>
+/* STATUS */
+#status {
+  position: absolute;
+  bottom: 20px;
+  left: 20px;
+  color: orange;
+}
+</style>
+
 </head>
 
 <body>
 
-<div id="globeViz"></div>
-
-<div id="panel">
-  <h3 id="title"></h3>
-  <a id="link" target="_blank">Ver fuente</a>
+<div id="hud">
+🛰️ MONITOR MILITAR 3.0<br>
+<span id="systemStatus">INICIANDO...</span>
 </div>
 
-<div id="status">🛰️ Iniciando sistema...</div>
+<div id="panel">
+<h3 id="title"></h3>
+<a id="link" target="_blank">Abrir fuente</a>
+</div>
+
+<div id="status"></div>
+<div id="globeViz"></div>
 
 <script src="//unpkg.com/globe.gl"></script>
 
 <script>
-const WORKER_URL = "TU_WORKER_URL"; // 🔥 CAMBIAR ESTO
 
-const container = document.getElementById('globeViz');
-const statusEl = document.getElementById('status');
+const WORKER_URL = "TU_WORKER_URL"; // ⚠️ CAMBIAR
 
-function initGlobe() {
+const statusEl = document.getElementById("status");
+const sys = document.getElementById("systemStatus");
+
+/* 🌍 GLOBO */
+const globe = Globe()(document.getElementById("globeViz"))
+  .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
+  .backgroundColor('#000000')
+  .pointAltitude(0.008)
+  .pointRadius(0.08)
+  .pointColor(() => "#00ff9d");
+
+/* 🎯 DATOS */
+async function loadData() {
   try {
-    const globe = Globe()(container)
-      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-night.jpg')
-      .backgroundColor('#000000')
-      .pointAltitude(0.01)
-      .pointRadius(0.2)
-      .pointColor(() => "rgba(255,0,0,0.8)");
-
-    loadData(globe);
-
-  } catch (e) {
-    console.error("ERROR 3D:", e);
-    container.innerHTML = "<h2 style='color:red'>⚠️ Error cargando visor 3D</h2>";
-  }
-}
-
-async function loadData(globe) {
-  try {
-    statusEl.innerText = "🌐 Conectando con inteligencia militar...";
+    sys.innerText = "CONECTANDO INTEL...";
 
     const res = await fetch(WORKER_URL);
     const data = await res.json();
 
     const mapped = data.map(d => {
       const coords = getCoords(d.title);
-      return coords.lat ? {
-        ...coords,
-        title: d.title,
-        link: d.link
-      } : null;
-    }).filter(Boolean);
+
+      return {
+        lat: coords.lat,
+        lng: coords.lng,
+        title: d.title || "Sin título",
+        link: d.link || "#"
+      };
+    });
 
     globe.pointsData(mapped);
 
+    /* 🔴 RING EFECT */
     globe.ringsData(mapped)
-      .ringColor(() => t => `rgba(255,0,0,${1-t})`)
-      .ringMaxRadius(3)
-      .ringPropagationSpeed(1.5)
-      .ringRepeatPeriod(2000);
+      .ringColor(() => t => `rgba(0,255,157,${1-t})`)
+      .ringMaxRadius(2)
+      .ringPropagationSpeed(1.2)
+      .ringRepeatPeriod(1800);
 
-    globe.onPointClick(p => showPanel(p));
+    globe.onPointClick(p => {
+      showPanel(p);
+    });
 
-    statusEl.innerText = "🟢 Sistema activo";
+    sys.innerText = "SISTEMA ACTIVO";
+    statusEl.innerText = "Eventos detectados: " + mapped.length;
 
   } catch (e) {
-    console.error("DATA ERROR:", e);
-    retryConnection(globe);
+    console.error(e);
+    retry();
   }
 }
 
-function retryConnection(globe) {
-  statusEl.innerText = "🔄 Reintentando conexión segura...";
-  setTimeout(() => loadData(globe), 5000);
+/* 🔁 RETRY */
+function retry() {
+  sys.innerText = "REINTENTANDO CONEXIÓN...";
+  setTimeout(loadData, 4000);
 }
 
-function showPanel(p) {
-  const panel = document.getElementById("panel");
-  document.getElementById("title").innerText = p.title;
-  document.getElementById("link").href = p.link;
-  panel.style.display = "block";
-}
-
+/* 📍 GEO DETECCIÓN MEJORADA */
 function getCoords(text) {
+
   const map = {
-    "ukraine": { lat: 48.3794, lng: 31.1656 },
-    "russia": { lat: 61.5240, lng: 105.3188 },
-    "gaza": { lat: 31.5, lng: 34.47 },
-    "israel": { lat: 31.0, lng: 35.0 },
-    "lebanon": { lat: 33.8547, lng: 35.8623 },
-    "syria": { lat: 34.8021, lng: 38.9968 },
-    "iran": { lat: 32.4279, lng: 53.6880 },
-    "iraq": { lat: 33.2232, lng: 43.6793 },
-    "china": { lat: 35.8617, lng: 104.1954 },
-    "taiwan": { lat: 23.6978, lng: 120.9605 },
-    "north korea": { lat: 40.3399, lng: 127.5101 },
-    "south korea": { lat: 35.9078, lng: 127.7669 },
-    "afghanistan": { lat: 33.9391, lng: 67.7100 }
+    "ukraine": [48,31],
+    "russia": [60,90],
+    "israel": [31,35],
+    "gaza": [31.5,34.5],
+    "lebanon": [33.8,35.8],
+    "syria": [34,38],
+    "iran": [32,53],
+    "iraq": [33,44],
+    "afghanistan": [33,66],
+    "china": [35,103],
+    "taiwan": [23,121],
+    "north korea": [40,127],
+    "south korea": [36,128],
+    "japan": [36,138],
+    "india": [21,78],
+    "pakistan": [30,70],
+    "yemen": [15,48],
+    "saudi": [24,45],
+    "egypt": [26,30],
+    "libya": [26,17],
+    "sudan": [15,30],
+    "turkey": [39,35],
+    "france": [46,2],
+    "germany": [51,10],
+    "poland": [52,19],
+    "uk": [55,-3],
+    "usa": [39,-98],
+    "mexico": [23,-102],
+    "brazil": [-14,-51]
   };
 
   const lower = text.toLowerCase();
 
   for (let key in map) {
-    if (lower.includes(key)) return map[key];
+    if (lower.includes(key)) {
+      return { lat: map[key][0], lng: map[key][1] };
+    }
   }
 
-  return {};
+  /* 🧠 FALLBACK INTELIGENTE */
+  return {
+    lat: (Math.random() * 140 - 70),
+    lng: (Math.random() * 360 - 180)
+  };
 }
 
-initGlobe();
+/* 📊 PANEL INFO */
+function showPanel(p) {
+  const panel = document.getElementById("panel");
+
+  document.getElementById("title").innerText = p.title;
+  document.getElementById("link").href = p.link;
+
+  panel.style.display = "block";
+}
+
+/* INIT */
+loadData();
+
 </script>
 
 </body>
