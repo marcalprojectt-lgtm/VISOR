@@ -1,65 +1,127 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>VISOR AUTOMÁTICO - EN DIRECTO</title>
-    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-    <style>
-        body { margin: 0; background: #0b0b0b; color: #00ff00; font-family: monospace; }
-        #map { height: 100vh; width: 100%; }
-        .overlay { position: absolute; top: 10px; left: 50px; z-index: 1000; background: rgba(0,0,0,0.8); padding: 15px; border: 1px solid #00ff00; }
-        .reloj { color: #fff; font-size: 0.8em; margin-top: 5px; }
-    </style>
+  <meta charset="UTF-8">
+  <title>VISOR 3D - INTELIGENCIA</title>
+  <style>
+    body { margin: 0; background: #000; color: #0f0; font-family: monospace; overflow: hidden; }
+    #globeViz { width: 100vw; height: 100vh; cursor: move; }
+    
+    /* Panel superior izquierdo */
+    .overlay { position: absolute; top: 20px; left: 20px; z-index: 10; background: rgba(0,20,0,0.8); padding: 15px; border: 1px solid #0f0; border-radius: 5px; pointer-events: none; text-shadow: 0 0 5px #0f0; }
+    .title { color: #ff3333; font-weight: bold; font-size: 1.2em; text-shadow: 0 0 5px red; }
+    
+    /* Tarjeta de información al hacer clic */
+    #info { position: absolute; bottom: 30px; left: 20px; background: rgba(0,0,0,0.9); border: 1px solid #444; color: #fff; padding: 15px; display: none; max-width: 320px; font-family: sans-serif; z-index: 10; border-left: 4px solid #ff3333; box-shadow: 0 0 15px rgba(255,0,0,0.3); }
+  </style>
+  
+  <script src="//unpkg.com/globe.gl"></script>
 </head>
 <body>
-    <div class="overlay">
-        <b>SISTEMA DE VIGILANCIA GLOBAL</b><br>
-        <small>ESTADO: CONECTADO (RED SÍSMICA EE.UU.)</small>
-        <div class="reloj" id="hora">Actualizando...</div>
-    </div>
-    
-    <div id="map"></div>
+  
+  <div class="overlay">
+    <div class="title">🛰️ RED DE INTELIGENCIA 3D</div>
+    <div>ESTADO: RASTREO GLOBAL ACTIVO</div>
+    <div id="status" style="color:#fff; font-size: 0.8em; margin-top:5px;">Conectando a base de datos de la ONU...</div>
+  </div>
+  
+  <div id="info"></div>
+  
+  <div id="globeViz"></div>
 
-    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-    <script>
-        const map = L.map('map').setView([30.0, 45.0], 4);
-        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+  <script>
+    // 1. Inicializar el globo terráqueo oscuro
+    const world = Globe()
+      (document.getElementById('globeViz'))
+      .globeImageUrl('//unpkg.com/three-globe/example/img/earth-dark.jpg') // Textura nocturna
+      .backgroundColor('#000000') // Fondo del espacio
+      .pointOfView({ lat: 31.5, lng: 34.8, altitude: 1.8 }); // Centrar cámara en Oriente Medio
 
-        // FUNCIÓN INFALIBLE: Conexión a la red global pública
-        async function obtenerDatosEnDirecto() {
-            try {
-                // Descarga anomalías de las últimas 24 horas en tiempo real
-                const respuesta = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson');
-                const datos = await respuesta.json();
+    // Autogiro lento como en las películas
+    world.controls().autoRotate = true;
+    world.controls().autoRotateSpeed = 0.6;
 
-                datos.features.forEach(alerta => {
-                    const coords = [alerta.geometry.coordinates[1], alerta.geometry.coordinates[0]];
-                    const titulo = alerta.properties.title;
-                    const intensidad = alerta.properties.mag;
+    async function loadData() {
+        try {
+            // Descargar datos de la ONU
+            const url = 'https://api.reliefweb.int/v1/reports?appname=visor_militar&query[value]=conflict OR attack OR war OR crisis&filter[field]=primary_country.location&limit=60&sort[]=date:desc&profile=full';
+            const res = await fetch(url);
+            const json = await res.json();
 
-                    // Color y tamaño según la gravedad
-                    let colorPunto = "orange";
-                    if (intensidad > 4.5) colorPunto = "red";
-                    if (intensidad < 3) colorPunto = "yellow";
+            const pointsData = [];
 
-                    L.circleMarker(coords, {
-                        radius: intensidad * 2, 
-                        fillColor: colorPunto, 
-                        color: "#fff", 
-                        weight: 1, 
-                        fillOpacity: 0.7
-                    }).addTo(map)
-                    .bindPopup(`<b>ALERTA DETECTADA</b><br><small>${titulo}</small>`);
-                });
+            json.data.forEach(alerta => {
+                const campos = alerta.fields;
+                if(campos.primary_country && campos.primary_country.location) {
+                    const pais = campos.primary_country.name;
+                    
+                    // --- SISTEMA DE PRIORIDADES ---
+                    let isHighPriority = true;
+                    let pointColor = '#ff1a1a'; // Rojo alerta
+                    let pointSize = 0.5; // Altura del pilar en el mapa
 
-                document.getElementById('hora').innerText = "Conexión estable - Última lectura: " + new Date().toLocaleTimeString();
+                    // Países con conflicto constante (prioridad normal)
+                    const zonasConstantes = ['State of Palestine', 'Israel', 'Ukraine', 'Sudan', 'Myanmar'];
+                    
+                    if (zonasConstantes.includes(pais)) {
+                        isHighPriority = false;
+                        pointColor = '#ffaa00'; // Naranja
+                        pointSize = 0.15; // Más bajito
+                    }
 
-            } catch (error) {
-                document.getElementById('hora').innerText = "Fallo de conexión crítico";
-            }
+                    pointsData.push({
+                        lat: campos.primary_country.location.lat,
+                        lng: campos.primary_country.location.lon,
+                        size: pointSize,
+                        color: pointColor,
+                        pais: pais,
+                        titulo: campos.title,
+                        fecha: new Date(campos.date.created).toLocaleDateString(),
+                        link: campos.url,
+                        priority: isHighPriority
+                    });
+                }
+            });
+
+            // 2. Dibujar los puntos en la bola
+            world.pointsData(pointsData)
+              .pointAltitude(d => d.size)
+              .pointColor('color')
+              .pointRadius(d => d.size * 1.5)
+              .onPointClick(d => {
+                  // Detener el giro al hacer clic para leer bien
+                  world.controls().autoRotate = false; 
+                  
+                  // Mostrar la tarjeta de información
+                  const infoDiv = document.getElementById('info');
+                  infoDiv.style.display = 'block';
+                  infoDiv.innerHTML = `
+                    <b style="color:${d.color}; font-size:1.1em;">${d.priority ? '⚠️ ALERTA CRÍTICA INESPERADA' : '📡 REPORTE DE CONFLICTO'}</b><br>
+                    <hr style="border: 0.5px solid #444;">
+                    <b style="color:#aaa;">ZONA:</b> ${d.pais}<br>
+                    <b style="color:#aaa;">FECHA:</b> ${d.fecha}<br>
+                    <div style="margin-top:8px; font-size:0.9em; line-height:1.4;">${d.titulo}</div>
+                    <hr style="border: 0.5px solid #444;">
+                    <a href="${d.link}" target="_blank" style="color: #4da6ff; text-decoration: none; font-weight:bold;">[+] ACCEDER AL INFORME DE INTELIGENCIA</a>
+                  `;
+              });
+
+            // 3. Efecto RADAR (ondas) SOLO para los de alta prioridad
+            const highPriorityData = pointsData.filter(d => d.priority);
+            world.ringsData(highPriorityData)
+              .ringColor(() => '#ff0000') // Ondas rojas
+              .ringMaxRadius(3) // Tamaño de la onda
+              .ringPropagationSpeed(1) // Velocidad
+              .ringRepeatPeriod(800); // Frecuencia del pulso
+
+            document.getElementById('status').innerText = "SATÉLITES SINCRONIZADOS";
+
+        } catch(e) {
+            document.getElementById('status').innerText = "ERROR DE CONEXIÓN";
         }
+    }
 
-        obtenerDatosEnDirecto();
-    </script>
+    loadData();
+  </script>
 </body>
 </html>
