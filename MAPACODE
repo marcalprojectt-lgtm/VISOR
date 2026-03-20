@@ -2,38 +2,75 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>VISOR EN DIRECTO - ORIENTE MEDIO</title>
+    <title>VISOR AUTOMÁTICO - EN DIRECTO</title>
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
     <style>
         body { margin: 0; background: #0b0b0b; color: #00ff00; font-family: monospace; }
         #map { height: 100vh; width: 100%; }
-        .overlay { position: absolute; top: 10px; left: 50px; z-index: 1000; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #00ff00; }
+        .overlay { position: absolute; top: 10px; left: 50px; z-index: 1000; background: rgba(0,0,0,0.8); padding: 15px; border: 1px solid #00ff00; }
+        .reloj { color: #fff; font-size: 0.8em; margin-top: 5px; }
     </style>
 </head>
 <body>
     <div class="overlay">
-        <b>SISTEMA DE VIGILANCIA REGIONAL</b><br>
-        <small>ESTADO: ACTIVO | MARZO 2026</small>
+        <b>SISTEMA DE VIGILANCIA GLOBAL</b><br>
+        <small>ESTADO: CONECTADO A API EXTERNA</small>
+        <div class="reloj" id="hora">Actualizando...</div>
     </div>
+    
     <div id="map"></div>
+
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        const map = L.map('map').setView([30.0, 45.0], 5);
+        // 1. Iniciamos el mapa
+        const map = L.map('map').setView([30.0, 45.0], 4);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-        const puntos = [
-            {loc: [32.65, 51.66], t: "IRÁN (Isfahán)", d: "Actividad en instalaciones detectada.", c: "orange"},
-            {loc: [35.68, 51.38], t: "TEHERÁN", d: "Alerta de defensa aérea nivel 2.", c: "orange"},
-            {loc: [31.50, 34.46], t: "GAZA", d: "Zona de combate activo.", c: "red"},
-            {loc: [33.88, 35.49], t: "BEIRUT", d: "Impactos reportados en zona sur.", c: "red"},
-            {loc: [15.36, 44.19], t: "YEMEN", d: "Lanzamiento de drones detectado.", c: "red"},
-            {loc: [34.50, 36.07], t: "SIRIA", d: "Movimientos militares en frontera.", c: "yellow"}
-        ];
+        // 2. FUNCIÓN AUTOMÁTICA: Conectarse a internet y descargar datos en directo
+        async function obtenerDatosEnDirecto() {
+            try {
+                // Se conecta a una base de datos pública real (Alertas Globales de los últimos 7 días)
+                const respuesta = await fetch('https://www.gdacs.org/xml/rss_7d.geojson');
+                const datos = await respuesta.json();
 
-        puntos.forEach(p => {
-            L.circleMarker(p.loc, {radius: 9, fillColor: p.c, color: "#fff", weight: 1, fillOpacity: 0.8})
-            .addTo(map).bindPopup(`<b>${p.t}</b><br>${p.d}`);
-        });
+                // 3. Procesar y dibujar cada alerta automáticamente
+                datos.features.forEach(alerta => {
+                    const coords = [alerta.geometry.coordinates[1], alerta.geometry.coordinates[0]];
+                    const titulo = alerta.properties.name;
+                    const descripcion = alerta.properties.description;
+                    const nivel = alerta.properties.alertlevel; // Verde, Naranja o Rojo
+
+                    // Asignar color según la gravedad del aviso
+                    let colorPunto = "orange";
+                    if (nivel === "Red") colorPunto = "red";
+                    if (nivel === "Green") colorPunto = "green";
+
+                    // Dibujar en el mapa
+                    L.circleMarker(coords, {
+                        radius: 8, 
+                        fillColor: colorPunto, 
+                        color: "#fff", 
+                        weight: 1, 
+                        fillOpacity: 0.8
+                    }).addTo(map)
+                    .bindPopup(`<b>${titulo}</b><br><small>${descripcion}</small>`);
+                });
+
+                // Actualizar la hora de la última conexión
+                document.getElementById('hora').innerText = "Última lectura: " + new Date().toLocaleTimeString();
+
+            } catch (error) {
+                console.error("Error al conectar con la base de datos", error);
+                document.getElementById('hora').innerText = "Error de conexión";
+            }
+        }
+
+        // Ejecutar la función nada más abrir la web
+        obtenerDatosEnDirecto();
+
+        // Ordenar que vuelva a buscar datos nuevos cada 15 minutos (900000 milisegundos)
+        setInterval(obtenerDatosEnDirecto, 900000);
+
     </script>
 </body>
 </html>
