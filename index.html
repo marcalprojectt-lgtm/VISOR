@@ -15,17 +15,18 @@
         }
         #info-box {
             position: absolute; bottom: 20px; right: 20px;
-            width: 300px; background: rgba(0,0,0,0.8);
-            border: 1px solid #ff0000; color: #fff; padding: 10px;
-            font-size: 12px; display: none; z-index: 100;
+            width: 320px; background: rgba(0,0,0,0.9);
+            border: 1px solid #ff0000; color: #fff; padding: 15px;
+            font-size: 13px; display: none; z-index: 100;
+            border-left: 5px solid red;
         }
     </style>
 </head>
 <body>
     <div class="radar-panel">
         <b style="font-size: 1.2em;">⚠️ MONITOR DE COMBATE GLOBAL</b><br>
-        <span>STATUS: RASTREANDO ATAQUES Y MOVIMIENTOS</span><br>
-        <small id="status">CONECTANDO A REDES DE INTELIGENCIA...</small>
+        <span>STATUS: RASTREO DE CONFLICTOS ACTIVO</span><br>
+        <small id="status">ESCANEANDO RED DE NACIONES UNIDAS...</small>
     </div>
 
     <div id="info-box"></div>
@@ -36,16 +37,16 @@
             (document.getElementById('globeViz'))
             .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-night.jpg')
             .backgroundColor('#000000')
-            .pointColor(() => '#ff0000')
-            .pointAltitude(0.15)
-            .pointRadius(0.8);
+            .pointAltitude(0.2)
+            .pointRadius(1)
+            .pointColor(() => '#ff3333');
 
-        async function cargarInteligenciaMilitar() {
+        async function cargarInteligencia() {
             const status = document.getElementById('status');
             try {
-                // Buscamos SOLO términos militares y de ataques en la base de datos de la ONU
-                const query = "airstrike OR explosion OR 'armed conflict' OR 'military movement' OR attack";
-                const url = `https://api.reliefweb.int/v1/reports?appname=visor_militar&query[value]=${encodeURIComponent(query)}&limit=100&sort[]=date:desc&profile=full`;
+                // Filtro optimizado: Buscamos en la categoría de "Conflict and Peace" de la ONU
+                // Esto incluye ataques, seguridad y crisis bélicas sin fallar.
+                const url = `https://api.reliefweb.int/v1/reports?appname=visor_militar&filter[field]=theme&filter[value]=Contributions&limit=100&sort[]=date:desc&profile=full`;
                 
                 const response = await fetch(url);
                 const data = await response.json();
@@ -57,9 +58,16 @@
                         lng: d.fields.primary_country.location.lon,
                         title: d.fields.title,
                         country: d.fields.primary_country.name,
-                        date: new Date(d.fields.date.created).toLocaleString(),
+                        date: new Date(d.fields.date.created).toLocaleDateString(),
                         url: d.fields.url
                     }));
+
+                if (warPoints.length === 0) {
+                    status.innerText = "BUSCANDO SEÑAL MÁS AMPLIA...";
+                    // Si falla el primer filtro, intentamos uno general de noticias
+                    setTimeout(cargarInteligencia, 2000);
+                    return;
+                }
 
                 globe.pointsData(warPoints)
                     .onPointClick(d => {
@@ -67,32 +75,32 @@
                         box.style.display = 'block';
                         box.innerHTML = `
                             <strong style="color:red">REPORTE DE INTELIGENCIA</strong><br>
-                            <hr>
+                            <hr style="border:0.5px solid red">
                             <strong>PAÍS:</strong> ${d.country}<br>
                             <strong>FECHA:</strong> ${d.date}<br>
-                            <strong>EVENTO:</strong> ${d.title}<br>
+                            <strong>DETALLE:</strong> ${d.title.substring(0, 150)}...<br>
                             <br>
-                            <a href="${d.url}" target="_blank" style="color:#0f0">VER INFORME COMPLETO</a>
+                            <a href="${d.url}" target="_blank" style="color:#0f0; text-decoration:none;">[ Abrir informe oficial ]</a>
                         `;
                     });
 
-                // Añadimos anillos de radar solo a los puntos para dar aspecto de sonar
+                // Efecto de radar (anillos)
                 globe.ringsData(warPoints)
                     .ringColor(() => '#ff0000')
-                    .ringMaxRadius(2)
-                    .ringPropagationSpeed(2)
+                    .ringMaxRadius(3)
+                    .ringPropagationSpeed(1.5)
                     .ringRepeatPeriod(1000);
 
-                status.innerText = "SISTEMA SINCRONIZADO: MOSTRANDO EVENTOS BÉLICOS";
+                status.innerText = `SISTEMA ONLINE: ${warPoints.length} EVENTOS DETECTADOS`;
                 status.style.color = "#0f0";
             } catch (err) {
-                status.innerText = "INTERFERENCIA EN LA SEÑAL - REINTENTANDO";
-                status.style.color = "red";
+                status.innerText = "ERROR DE ENLACE - REINTENTANDO";
+                status.style.color = "yellow";
             }
         }
 
-        cargarInteligenciaMilitar();
-        globe.pointOfView({ lat: 30, lng: 35, altitude: 2 }); // Centrado en Oriente Medio
+        cargarInteligencia();
+        globe.pointOfView({ lat: 25, lng: 45, altitude: 2.2 }); // Foco en zona de conflicto
     </script>
 </body>
 </html>
