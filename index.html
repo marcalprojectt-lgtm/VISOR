@@ -14,7 +14,7 @@
 <body>
     <div class="overlay">
         <b>SISTEMA DE VIGILANCIA GLOBAL</b><br>
-        <small>ESTADO: CONECTADO A API EXTERNA</small>
+        <small>ESTADO: CONECTADO (RED SÍSMICA EE.UU.)</small>
         <div class="reloj" id="hora">Actualizando...</div>
     </div>
     
@@ -22,55 +22,44 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
-        // 1. Iniciamos el mapa
         const map = L.map('map').setView([30.0, 45.0], 4);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
 
-        // 2. FUNCIÓN AUTOMÁTICA: Conectarse a internet y descargar datos en directo
+        // FUNCIÓN INFALIBLE: Conexión a la red global pública
         async function obtenerDatosEnDirecto() {
             try {
-                // Se conecta a una base de datos pública real (Alertas Globales de los últimos 7 días)
-                const respuesta = await fetch('https://www.gdacs.org/xml/rss_7d.geojson');
+                // Descarga anomalías de las últimas 24 horas en tiempo real
+                const respuesta = await fetch('https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson');
                 const datos = await respuesta.json();
 
-                // 3. Procesar y dibujar cada alerta automáticamente
                 datos.features.forEach(alerta => {
                     const coords = [alerta.geometry.coordinates[1], alerta.geometry.coordinates[0]];
-                    const titulo = alerta.properties.name;
-                    const descripcion = alerta.properties.description;
-                    const nivel = alerta.properties.alertlevel; // Verde, Naranja o Rojo
+                    const titulo = alerta.properties.title;
+                    const intensidad = alerta.properties.mag;
 
-                    // Asignar color según la gravedad del aviso
+                    // Color y tamaño según la gravedad
                     let colorPunto = "orange";
-                    if (nivel === "Red") colorPunto = "red";
-                    if (nivel === "Green") colorPunto = "green";
+                    if (intensidad > 4.5) colorPunto = "red";
+                    if (intensidad < 3) colorPunto = "yellow";
 
-                    // Dibujar en el mapa
                     L.circleMarker(coords, {
-                        radius: 8, 
+                        radius: intensidad * 2, 
                         fillColor: colorPunto, 
                         color: "#fff", 
                         weight: 1, 
-                        fillOpacity: 0.8
+                        fillOpacity: 0.7
                     }).addTo(map)
-                    .bindPopup(`<b>${titulo}</b><br><small>${descripcion}</small>`);
+                    .bindPopup(`<b>ALERTA DETECTADA</b><br><small>${titulo}</small>`);
                 });
 
-                // Actualizar la hora de la última conexión
-                document.getElementById('hora').innerText = "Última lectura: " + new Date().toLocaleTimeString();
+                document.getElementById('hora').innerText = "Conexión estable - Última lectura: " + new Date().toLocaleTimeString();
 
             } catch (error) {
-                console.error("Error al conectar con la base de datos", error);
-                document.getElementById('hora').innerText = "Error de conexión";
+                document.getElementById('hora').innerText = "Fallo de conexión crítico";
             }
         }
 
-        // Ejecutar la función nada más abrir la web
         obtenerDatosEnDirecto();
-
-        // Ordenar que vuelva a buscar datos nuevos cada 15 minutos (900000 milisegundos)
-        setInterval(obtenerDatosEnDirecto, 900000);
-
     </script>
 </body>
 </html>
