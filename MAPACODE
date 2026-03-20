@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>VISOR EN DIRECTO - ORIENTE MEDIO</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <style>
+        body { margin: 0; background: #0b0b0b; color: #00ff00; font-family: monospace; }
+        #map { height: 100vh; width: 100%; }
+        .overlay { position: absolute; top: 10px; left: 50px; z-index: 1000; background: rgba(0,0,0,0.8); padding: 10px; border: 1px solid #00ff00; }
+    </style>
+</head>
+<body>
+    <div class="overlay">
+        <b>SISTEMA DE VIGILANCIA REGIONAL</b><br>
+        <small>ESTADO: ACTIVO | MARZO 2026</small>
+    </div>
+    <div id="map"></div>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        const map = L.map('map').setView([30.0, 45.0], 5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png').addTo(map);
+
+        const puntos = [
+            {loc: [32.65, 51.66], t: "IRÁN (Isfahán)", d: "Actividad en instalaciones detectada.", c: "orange"},
+            {loc: [35.68, 51.38], t: "TEHERÁN", d: "Alerta de defensa aérea nivel 2.", c: "orange"},
+            {loc: [31.50, 34.46], t: "GAZA", d: "Zona de combate activo.", c: "red"},
+            {loc: [33.88, 35.49], t: "BEIRUT", d: "Impactos reportados en zona sur.", c: "red"},
+            {loc: [15.36, 44.19], t: "YEMEN", d: "Lanzamiento de drones detectado.", c: "red"},
+            {loc: [34.50, 36.07], t: "SIRIA", d: "Movimientos militares en frontera.", c: "yellow"}
+        ];
+
+        puntos.forEach(p => {
+            L.circleMarker(p.loc, {radius: 9, fillColor: p.c, color: "#fff", weight: 1, fillOpacity: 0.8})
+            .addTo(map).bindPopup(`<b>${p.t}</b><br>${p.d}`);
+        });
+    </script>
+</body>
+</html>
