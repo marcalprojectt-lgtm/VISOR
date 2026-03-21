@@ -2,17 +2,17 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>SISTEMA DE INTELIGENCIA GLOBAL</title>
+<title>WAR ROOM TERMINAL - V3.0</title>
 
 <style>
-  /* ESTÉTICA DE ORDENADOR MILITAR / ESPÍA */
+  /* ESTÉTICA DE PANTALLA MILITAR / ESPÍA */
   body {
     margin: 0; background: #050505; color: #00ff9d;
     font-family: 'Courier New', Courier, monospace;
     overflow: hidden; user-select: none;
   }
 
-  /* Efecto de pantalla de tubo (CRT) y escáner */
+  /* Efecto de pantalla de tubo (CRT) */
   body::after {
     content: " "; display: block; position: absolute;
     top: 0; left: 0; bottom: 0; right: 0;
@@ -20,21 +20,21 @@
     z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none;
   }
 
-  /* Interfaz Principal HUD */
+  /* Interfaz Principal HUD (Verde) */
   .hud-box {
     position: absolute; background: rgba(0, 20, 0, 0.85);
-    border: 1px solid #00ff9d; box-shadow: 0 0 10px rgba(0,255,157,0.2), inset 0 0 10px rgba(0,255,157,0.1);
-    z-index: 10; padding: 15px;
+    border: 1px solid #00ff9d; box-shadow: 0 0 10px rgba(0,255,157,0.2);
+    z-index: 10; padding: 15px; border-radius: 5px;
   }
 
-  /* Panel Superior Izquierdo */
-  #top-left { top: 20px; left: 20px; border-left: 4px solid #00ff9d; }
+  #hud-main { top: 20px; left: 20px; border-left: 4px solid #00ff9d; }
   
-  /* Panel de Información Lateral (Oculto por defecto) */
+  /* Panel de Detalles (Rojo) */
   #info-panel {
     top: 20px; right: 20px; width: 350px; height: 80vh;
-    display: none; border-right: 4px solid #ff003c;
-    color: #fff;
+    display: none; border-right: 4px solid #ff003c; border-left: 1px solid #ff003c;
+    color: #fff; background: rgba(10, 0, 0, 0.9);
+    box-shadow: 0 0 20px rgba(255,0,0,0.3);
   }
 
   #info-panel h2 { color: #ff003c; text-shadow: 0 0 5px red; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.2em;}
@@ -57,18 +57,16 @@
   .crosshair::before { content: ""; position: absolute; top: 20px; left: -10px; width: 60px; height: 1px; background: rgba(0, 255, 157, 0.3); }
   .crosshair::after { content: ""; position: absolute; top: -10px; left: 20px; width: 1px; height: 60px; background: rgba(0, 255, 157, 0.3); }
 
-  /* Etiqueta flotante al pasar el ratón */
-  .globe-tooltip { background: rgba(0,0,0,0.9) !important; border: 1px solid #ff003c !important; color: white !important; font-family: monospace !important; padding: 10px !important; box-shadow: 0 0 10px red !important; }
 </style>
 </head>
 
 <body>
 
-<div class="hud-box" id="top-left">
-  <b style="font-size: 1.2em; letter-spacing: 2px;">🔴 CENTRO DE MANDO</b><br>
+<div class="hud-box" id="hud-main">
+  <b style="font-size: 1.2em; letter-spacing: 2px;">🛰️ WAR ROOM TERMINAL</b><br>
   <span style="font-size: 0.8em; color: #aaa;">RED GUBERNAMENTAL SEGURA</span><br>
   <div style="margin-top: 10px; font-size: 0.8em;">
-    SATÉLITES: <span style="color: #00ff9d;">EN LÍNEA</span><br>
+    ESTADO: <span id="sys-status" style="color: yellow;">INICIALIZANDO...</span><br>
     FILTRO: <span style="color: #ff003c;">MILITAR / INTELIGENCIA</span>
   </div>
 </div>
@@ -78,9 +76,6 @@
   
   <span class="data-label">CÓDIGO DE EVENTO</span>
   <span class="data-value" id="panel-title">--</span>
-
-  <span class="data-label">COORDENADAS APROX.</span>
-  <span class="data-value" id="panel-coords">--</span>
 
   <span class="data-label">ANÁLISIS DE SITUACIÓN</span>
   <span class="data-value" id="panel-desc">--</span>
@@ -94,68 +89,106 @@
 <script src="https://unpkg.com/globe.gl"></script>
 
 <script>
-// Inicializar la bola del mundo con textura HD
+// 1. INICIALIZAR LA BOLA DEL MUNDO (Con texturas HD)
 const globe = Globe()(document.getElementById("globeViz"))
-  .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-water.png")
-  .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+  .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-water.png") // Textura base HD
+  .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png") // Relieve para montañas
   .backgroundColor("#000000")
-  .pointOfView({ lat: 30, lng: 35, altitude: 2 });
+  .pointOfView({ lat: 30, lng: 35, altitude: 2 }); // Centrado en Oriente Medio
 
-// Datos MILITARES reales estáticos (para garantizar que los ves y puedes hacer clic)
-const inteligenciaMilitar = [
+// 2. DATOS DE EMERGENCIA (A prueba de fallos: se pintan sí o sí)
+const datosEmergencia = [
   {
-    titulo: "MOVIMIENTO DE TROPAS EN FRONTERA",
-    desc: "Satélites de reconocimiento detectan reagrupamiento de unidades blindadas en el sector este. Posible preparación para maniobras de avance. Se mantiene nivel de alerta elevado en la región.",
+    titulo: "MOVIMIENTO DE TROPAS EN FRONTERA SECTOR ESTE",
+    desc: "Datos hardcoded (de prueba) para el War Room Terminal. Satélites de reconocimiento detectan reagrupamiento de unidades blindadas. Se mantiene nivel de alerta elevado en la región.",
     lat: 48.3, lng: 35.0, color: "#ff003c" // Ucrania
   },
   {
-    titulo: "INCIDENTE MARÍTIMO DE SEGURIDAD",
-    desc: "Reporte de interceptación de drones submarinos no tripulados cerca de rutas comerciales clave. Unidades de patrulla costera han sido desplegadas para asegurar el perímetro.",
-    lat: 20.2, lng: 38.5, color: "#ff003c" // Mar Rojo
+    titulo: "INCIDENTE MARÍTIMO DE SEGURIDAD DETECTADO",
+    desc: "Datos hardcoded (de prueba) para el War Room Terminal. Reporte de interceptación de drones submarinos no tripulados. Unidades de patrulla costera desplegadas.",
+    lat: 20.2, lng: 38.5, color: "#ffaa00" // Mar Rojo
   },
   {
-    titulo: "ALERTA DE BOMBARDEO TÁCTICO",
-    desc: "Múltiples explosiones confirmadas en instalaciones logísticas. Fuentes de inteligencia sugieren ataques aéreos dirigidos a infraestructura militar crítica. Daños en evaluación.",
+    titulo: "ALERTA DE BOMBARDEO TÁCTICO CONFIRMADA",
+    desc: "Datos hardcoded (de prueba) para el War Room Terminal. Múltiples explosiones en instalaciones logísticas. Fuentes de inteligencia sugieren ataques aéreos dirigidos.",
     lat: 33.8, lng: 35.5, color: "#ff003c" // Líbano
   },
   {
-    titulo: "TENSIÓN NUCLEAR / MISILES",
-    desc: "Aviso de lanzamiento de prueba de misil balístico de corto alcance. Cayó en aguas internacionales. Los sistemas de defensa antimisiles regionales están en estado de pre-alerta.",
-    lat: 39.0, lng: 125.7, color: "#ffaa00" // Corea
+    titulo: "AIRSTRIKE GAZA SEC - UNIDAD 4",
+    desc: "Datos hardcoded (de prueba) para el War Room Terminal. Bombardeo confirmado en zona urbana. Evaluación de daños en curso.",
+    lat: 31.5, lng: 34.5, color: "#ff003c" // Gaza
   }
 ];
 
-// Dibujar los puntos con hitboxes GIGANTES para asegurar el clic
-globe.pointsData(inteligenciaMilitar)
-  .pointColor("color")
-  .pointAltitude(0.08)
-  .pointRadius(1.2) // Super grande para no fallar el clic
-  .pointResolution(32)
-  .pointLabel(d => `⚠️ ${d.titulo}`) // Hover limpio
-  .onPointClick((d) => {
-    // ESTO ABRE EL PANEL LATERAL SIN SACARTE DE LA PÁGINA
-    document.getElementById("info-panel").style.display = "block";
-    document.getElementById("panel-title").innerText = d.titulo;
-    document.getElementById("panel-coords").innerText = `LAT: ${d.lat.toFixed(4)} | LNG: ${d.lng.toFixed(4)}`;
-    document.getElementById("panel-desc").innerText = d.desc;
-  });
+// DIBUJAMOS LOS DATOS DE EMERGENCIA INMEDIATAMENTE
+sysStatus("SISTEMA ONLINE (MODO EMERGENCIA)");
+actualizarMapa(datosEmergencia);
 
-// Anillos tipo radar
-globe.ringsData(inteligenciaMilitar)
-  .ringColor("color")
-  .ringMaxRadius(5)
-  .ringPropagationSpeed(2)
-  .ringRepeatPeriod(1000);
+// 3. INTENTAR CARGAR DATOS REALES (Sin bloquear el mapa)
+async function fetchLiveIntel() {
+    sysStatus("SINCRO CON SATÉLITES REALES...");
+    try {
+        const query = encodeURIComponent('"military attack" OR "airstrike"');
+        const url = `https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3D${query}%26hl%3Den-US`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        if(data.status === 'ok') {
+            const newsPoints = data.items.map(item => ({
+                lat: 20 + (Math.random() * 25), // Aproximación a zona caliente
+                lng: 30 + (Math.random() * 25),
+                titulo: item.title,
+                desc: `Datos LIVE (Reales). Fuente: ${item.link}. ${item.pubDate}`,
+                color: "#ff003c"
+            }));
+            
+            // Mezclamos emergencia con reales y redibujamos
+            actualizarMapa([...datosEmergencia, ...newsPoints]);
+            sysStatus("RED SATELITAL COMPLETA - DATOS LIVE", "#00ff9d");
+        } else {
+            throw new Error(); // Forzar salto al catch si la API da error
+        }
+    } catch (e) {
+        console.log("Fallo de API, manteniendo modo emergencia.");
+        sysStatus("FALLO DE RED - MANTENIENDO PUNTOS EMERGENCIA", "red");
+        // No borramos nada, los puntos de emergencia siguen ahí.
+    }
+}
 
-// Cambiar cursor al pasar por encima
+// 4. FUNCIONES DE MAPA E INTERFAZ
+function actualizarMapa(puntos) {
+    globe.pointsData(puntos)
+      .pointColor("color")
+      .pointAltitude(0.08)
+      .pointRadius(1.2) // Radio visual grande
+      .pointResolution(32)
+      .pointLabel(d => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid red; color:white; font-family:monospace;">⚠️ ${d.titulo}</div>`) // Hover funcional
+      .onPointClick((point) => {
+          // ESTO ABRE EL PANEL LATERAL SIN SACARTE DE LA PÁGINA
+          if (!point) return;
+          document.getElementById("info-panel").style.display = "block";
+          document.getElementById("panel-title").innerText = point.titulo;
+          document.getElementById("panel-desc").innerText = point.desc;
+      });
+
+    globe.ringsData(puntos.slice(0, 10))
+      .ringColor("color")
+      .ringMaxRadius(4)
+      .ringPropagationSpeed(1.5)
+      .ringRepeatPeriod(1500);
+}
+
 globe.onPointHover(p => {
-  document.body.style.cursor = p ? "crosshair" : "default";
+  document.body.style.cursor = p ? "crosshair" : "default"; // Cursor de mira telescópica
 });
 
-// Función para cerrar el panel
-function cerrarPanel() {
-  document.getElementById("info-panel").style.display = "none";
-}
+function cerrarPanel() { document.getElementById("info-panel").style.display = "none"; }
+function sysStatus(txt, color = "yellow") { const el = document.getElementById("sys-status"); el.innerText = txt; el.style.color = color; }
+
+// Arrancamos la búsqueda de datos reales a los 2 segundos
+setTimeout(fetchLiveIntel, 2000);
+
 </script>
 </body>
 </html>
