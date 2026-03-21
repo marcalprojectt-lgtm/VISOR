@@ -2,19 +2,19 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>WAR ROOM TERMINAL - V5.0 LIVE DATA</title>
+<title>WAR ROOM TERMINAL - LIVE 24H</title>
 <style>
   body { margin: 0; background: #050505; color: #00ff9d; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; }
-  body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
+  body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; pointer-events: none; }
   .hud-box { position: absolute; background: rgba(0, 20, 0, 0.85); border: 1px solid #00ff9d; box-shadow: 0 0 10px rgba(0,255,157,0.2); z-index: 10; padding: 15px; border-radius: 5px; }
   #hud-main { top: 20px; left: 20px; border-left: 4px solid #00ff9d; max-width: 350px; }
   .leyenda { margin-top: 15px; font-size: 0.75em; border-top: 1px solid #00ff9d; padding-top: 10px; }
   .leyenda div { margin-bottom: 5px; }
   .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
-  #info-panel { top: 20px; right: 20px; width: 350px; display: none; border-right: 4px solid #ff003c; border-left: 1px solid #ff003c; color: #fff; background: rgba(10, 0, 0, 0.9); box-shadow: 0 0 20px rgba(255,0,0,0.3); }
-  #info-panel h2 { color: #ff003c; text-shadow: 0 0 5px red; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.2em;}
-  #info-panel .data-label { color: #00ff9d; font-weight: bold; font-size: 0.8em; margin-top: 10px; display: block; }
-  #info-panel .data-value { color: #ddd; font-size: 0.9em; margin-bottom: 10px; display: block; line-height: 1.4; }
+  #info-panel { top: 20px; right: 20px; width: 350px; display: none; border-right: 4px solid #ff003c; border-left: 1px solid #ff003c; color: #fff; background: rgba(10, 0, 0, 0.9); }
+  #info-panel h2 { color: #ff003c; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.2em; margin-top:0;}
+  .data-label { color: #00ff9d; font-weight: bold; font-size: 0.8em; margin-top: 10px; display: block; }
+  .data-value { color: #ddd; font-size: 0.9em; margin-bottom: 10px; display: block; line-height: 1.4; }
   .btn-cerrar { background: #ff003c; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 20px; text-transform: uppercase; }
   .btn-cerrar:hover { background: #fff; color: #ff003c; }
   .crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); border: 1px solid rgba(0, 255, 157, 0.3); border-radius: 50%; z-index: 1; pointer-events: none; }
@@ -25,27 +25,27 @@
 <body>
 
 <div class="hud-box" id="hud-main">
-  <b style="font-size: 1.2em;">🛰️ WAR ROOM TERMINAL</b><br>
-  <span style="font-size: 0.8em; color: #aaa;">RED GUBERNAMENTAL SEGURA</span><br>
+  <b style="font-size: 1.2em;">🛰️ WAR ROOM (24H LIVE)</b><br>
+  <span style="font-size: 0.8em; color: #aaa;">MONITOR DE ÚLTIMA HORA</span><br>
   <div style="margin-top: 10px; font-size: 0.8em;">
-    ESTADO: <span id="sys-status" style="color: yellow;">DESCARGANDO INTELIGENCIA ONU...</span>
+    ESTADO: <span id="sys-status" style="color: yellow;">ESCANEANDO NOTICIAS DE HOY...</span>
   </div>
   <div class="leyenda">
-    <div><span class="dot" style="background: #ff003c; box-shadow: 0 0 5px red;"></span> MILITAR (Ataques/Tropas)</div>
-    <div><span class="dot" style="background: #ffaa00;"></span> SOCIAL (Disturbios/Protestas)</div>
-    <div><span class="dot" style="background: #0088ff; border-radius: 0;"></span> POLÍTICA (Gobierno/Crisis)</div>
+    <div><span class="dot" style="background: #ff003c; box-shadow: 0 0 5px red;"></span> MILITAR (Ataques/Guerra)</div>
+    <div><span class="dot" style="background: #ffaa00;"></span> SOCIAL (Disturbios/Huelgas)</div>
+    <div><span class="dot" style="background: #0088ff; border-radius: 0;"></span> POLÍTICA (Gobiernos/Elecciones)</div>
   </div>
 </div>
 
 <div class="hud-box" id="info-panel">
-  <h2 id="panel-header">INFORME CLASIFICADO</h2>
-  <span class="data-label">FECHA DE REPORTE</span>
+  <h2 id="panel-header">ALERTA CONFIRMADA</h2>
+  <span class="data-label">HORA DEL REPORTE (Últimas 24h)</span>
   <span class="data-value" id="panel-date" style="color: yellow;">--</span>
-  <span class="data-label">ASUNTO</span>
+  <span class="data-label">TITULAR</span>
   <span class="data-value" id="panel-title" style="font-weight: bold;">--</span>
-  <span class="data-label">MÁS INFORMACIÓN</span>
+  <span class="data-label">ACCESO DIRECTO</span>
   <span class="data-value" id="panel-link">--</span>
-  <button class="btn-cerrar" onclick="cerrarPanel()">CERRAR COMUNICACIÓN</button>
+  <button class="btn-cerrar" onclick="cerrarPanel()">CERRAR INFORME</button>
 </div>
 
 <div class="crosshair"></div>
@@ -58,121 +58,125 @@ const globe = Globe()(document.getElementById("globeViz"))
   .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-water.png")
   .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
   .backgroundColor("#000000")
-  .pointOfView({ lat: 25, lng: 20, altitude: 2.5 });
+  .pointOfView({ lat: 25, lng: 20, altitude: 2.2 });
 
-// Variables para separar los datos
+// Diccionario geográfico robusto para que los puntos caigan en su sitio
+const geodict = {
+    "ukraine": {lat: 48.3, lng: 35.0, pais: "Ukraine"}, "russia": {lat: 55.7, lng: 37.6, pais: "Russia"},
+    "gaza": {lat: 31.4, lng: 34.4, pais: "Israel"}, "israel": {lat: 31.5, lng: 34.8, pais: "Israel"},
+    "lebanon": {lat: 33.8, lng: 35.5, pais: "Lebanon"}, "syria": {lat: 34.8, lng: 38.9, pais: "Syria"},
+    "yemen": {lat: 15.5, lng: 44.2, pais: "Yemen"}, "iran": {lat: 32.4, lng: 53.6, pais: "Iran"},
+    "taiwan": {lat: 23.5, lng: 121.0, pais: "Taiwan"}, "china": {lat: 35.8, lng: 104.1, pais: "China"},
+    "usa": {lat: 37.0, lng: -95.7, pais: "United States of America"}, "us ": {lat: 37.0, lng: -95.7, pais: "United States of America"},
+    "france": {lat: 46.2, lng: 2.2, pais: "France"}, "uk ": {lat: 55.3, lng: -3.4, pais: "United Kingdom"},
+    "venezuela": {lat: 6.4, lng: -66.5, pais: "Venezuela"}, "argentina": {lat: -38.4, lng: -63.6, pais: "Argentina"},
+    "sudan": {lat: 12.8, lng: 30.2, pais: "Sudan"}, "haiti": {lat: 18.9, lng: -72.2, pais: "Haiti"},
+    "somalia": {lat: 5.1, lng: 46.1, pais: "Somalia"}, "korea": {lat: 39.0, lng: 125.7, pais: "North Korea"}
+};
+
 let puntosMapa = [];
-let paisesEnCrisisAzul = [];
+let paisesPolitica = [];
 
-async function descargarDatosONU() {
+async function escanearNoticias24h() {
     try {
-        // Pedimos los 150 últimos reportes con coordenadas exactas a la ONU (ReliefWeb)
-        const url = 'https://api.reliefweb.int/v1/reports?appname=war_room&filter[field]=primary_country.location&limit=150&sort[]=date:desc&profile=full';
+        // Comando mágico: (guerra o protesta o crisis) when:1d -> Obliga a que sea solo de las últimas 24 horas
+        const query = encodeURIComponent('(war OR attack OR strike OR protest OR riot OR election OR crisis OR government) when:1d');
+        const url = `https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3D${query}%26hl%3Den-US%26gl%3DUS%26ceid%3DUS%3Aen`;
+        
         const res = await fetch(url);
         const json = await res.json();
         
         puntosMapa = [];
-        paisesEnCrisisAzul = [];
+        paisesPolitica = [];
 
-        json.data.forEach(alerta => {
-            const campos = alerta.fields;
-            if(campos.primary_country && campos.primary_country.location) {
-                const titulo = campos.title;
-                const pais = campos.primary_country.name;
-                const textoPlano = titulo.toLowerCase();
-                
-                // MOTOR DE CLASIFICACIÓN INTELIGENTE
+        json.items.forEach(item => {
+            const titulo = item.title.toLowerCase();
+            let matchedGeo = null;
+
+            // Buscar si la noticia menciona algún país de nuestro diccionario
+            for (let key in geodict) {
+                if (titulo.includes(key)) {
+                    matchedGeo = geodict[key];
+                    break;
+                }
+            }
+
+            if (matchedGeo) {
                 let tipo = "POLÍTICA"; 
                 let color = "#0088ff"; 
-                
-                // 1. Detección Militar
-                if(textoPlano.match(/attack|conflict|war|military|army|clash|strike|bomb/)) {
+
+                // Clasificador
+                if (titulo.match(/attack|war|strike|missile|idf|troops|killed|bomb/)) {
                     tipo = "MILITAR"; color = "#ff003c";
-                } 
-                // 2. Detección Social/Disturbios
-                else if (textoPlano.match(/protest|riot|demonstration|strike|march|civil/)) {
+                } else if (titulo.match(/protest|riot|demonstration|clash|march/)) {
                     tipo = "SOCIAL"; color = "#ffaa00";
                 }
 
-                // 3. Procesamiento (Si es política, guardamos el país para pintarlo azul. Si es Militar/Social, hacemos punto rojo/naranja)
                 if (tipo === "POLÍTICA") {
-                    if (!paisesEnCrisisAzul.includes(pais)) paisesEnCrisisAzul.push(pais);
+                    if (!paisesPolitica.includes(matchedGeo.pais)) paisesPolitica.push(matchedGeo.pais);
                 } else {
-                    puntosMapa.push({
-                        lat: campos.primary_country.location.lat,
-                        lng: campos.primary_country.location.lon,
-                        titulo: titulo,
-                        tipo: tipo,
-                        color: color,
-                        fecha: new Date(campos.date.created).toLocaleDateString(),
-                        link: campos.url
-                    });
+                    // Solo añadimos si no hay ya un punto exacto ahí (para no solapar 20 noticias de Gaza en el mismo pixel)
+                    const existe = puntosMapa.find(p => p.lat === matchedGeo.lat && p.tipo === tipo);
+                    if (!existe) {
+                        puntosMapa.push({
+                            lat: matchedGeo.lat + (Math.random()*0.5 - 0.25), // Dispersión leve
+                            lng: matchedGeo.lng + (Math.random()*0.5 - 0.25),
+                            titulo: item.title,
+                            tipo: tipo, color: color,
+                            fecha: item.pubDate,
+                            link: item.link
+                        });
+                    }
                 }
             }
         });
 
         dibujarMapa();
-        cargarFronterasPaisesAzules();
-        document.getElementById("sys-status").innerText = `SISTEMA ONLINE (${puntosMapa.length} FOCOS DETECTADOS)`;
+        cargarPaises();
+        document.getElementById("sys-status").innerText = `SISTEMA ONLINE (ACTUALIZADO: HOY)`;
         document.getElementById("sys-status").style.color = "#00ff9d";
 
-    } catch (error) {
-        document.getElementById("sys-status").innerText = "ERROR CRÍTICO DE ENLACE";
+    } catch (e) {
+        document.getElementById("sys-status").innerText = "ERROR LEYENDO NOTICIAS";
         document.getElementById("sys-status").style.color = "red";
     }
 }
 
 function dibujarMapa() {
     globe.pointsData(puntosMapa)
-      .pointColor("color")
-      .pointAltitude(0.08)
-      .pointRadius(0.8) // Tamaño equilibrado para ver muchos puntos
-      .pointResolution(32)
-      .pointLabel(d => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid ${d.color}; color:white; font-family:monospace;">${d.tipo}: ${d.titulo.substring(0, 50)}...</div>`)
+      .pointColor("color").pointAltitude(0.08).pointRadius(1.0).pointResolution(32)
+      .pointLabel(d => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid ${d.color}; color:white; font-family:monospace;">${d.tipo}: ${d.titulo.split(" - ")[0]}</div>`)
       .onPointClick((point) => {
           if (!point) return;
           document.getElementById("info-panel").style.display = "block";
-          document.getElementById("panel-header").innerText = `REPORTE: ${point.tipo}`;
+          document.getElementById("panel-header").innerText = `ALERTA: ${point.tipo}`;
           document.getElementById("panel-header").style.color = point.color;
           document.getElementById("panel-date").innerText = point.fecha;
           document.getElementById("panel-title").innerText = point.titulo;
-          document.getElementById("panel-link").innerHTML = `<a href="${point.link}" target="_blank" style="color:#00ff9d;">[ VER DOCUMENTO COMPLETO ]</a>`;
+          document.getElementById("panel-link").innerHTML = `<a href="${point.link}" target="_blank" style="color:#00ff9d;">[ LEER FUENTE OFICIAL ]</a>`;
       });
 
-    // Anillos de radar SOLO para los ataques militares
     globe.ringsData(puntosMapa.filter(p => p.tipo === "MILITAR"))
-      .ringColor("color")
-      .ringMaxRadius(3)
-      .ringPropagationSpeed(1.5)
-      .ringRepeatPeriod(1500);
+      .ringColor("color").ringMaxRadius(4).ringPropagationSpeed(1.5).ringRepeatPeriod(1200);
 }
 
-function cargarFronterasPaisesAzules() {
+function cargarPaises() {
     fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
       .then(res => res.json())
       .then(countries => {
         globe.polygonsData(countries.features)
-          .polygonCapColor(d => {
-            // Comprobación difusa para asegurar que los nombres de los países coinciden
-            const nombreMundial = d.properties.ADMIN.toLowerCase();
-            const coincide = paisesEnCrisisAzul.some(p => nombreMundial.includes(p.toLowerCase()) || p.toLowerCase().includes(nombreMundial));
-            return coincide ? 'rgba(0, 136, 255, 0.4)' : 'rgba(0,0,0,0)'; 
-          })
+          .polygonCapColor(d => paisesPolitica.includes(d.properties.ADMIN) ? 'rgba(0, 136, 255, 0.4)' : 'rgba(0,0,0,0)')
           .polygonSideColor(() => 'rgba(0, 255, 157, 0.05)')
-          .polygonStrokeColor(d => {
-            const nombreMundial = d.properties.ADMIN.toLowerCase();
-            const coincide = paisesEnCrisisAzul.some(p => nombreMundial.includes(p.toLowerCase()) || p.toLowerCase().includes(nombreMundial));
-            return coincide ? '#0088ff' : '#111';
-          });
+          .polygonStrokeColor(d => paisesPolitica.includes(d.properties.ADMIN) ? '#0088ff' : '#111')
+          .polygonLabel(d => paisesPolitica.includes(d.properties.ADMIN) ? `<div style="background:rgba(0,0,0,0.8); border:1px solid #0088ff; color:white; padding:5px; font-family:monospace;">⚠️ CRISIS POLÍTICA RECIENTE: ${d.properties.ADMIN}</div>` : '');
       });
 }
 
 function cerrarPanel() { document.getElementById("info-panel").style.display = "none"; }
 globe.onPointHover(p => document.body.style.cursor = p ? "crosshair" : "default");
 
-// Iniciar descarga y programar refresco cada 5 minutos
-descargarDatosONU();
-setInterval(descargarDatosONU, 300000);
+escanearNoticias24h();
+setInterval(escanearNoticias24h, 300000); // Se refresca solo cada 5 minutos
 
 </script>
 </body>
