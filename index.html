@@ -2,56 +2,49 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>WAR ROOM TERMINAL - V4.0 GEOPOLÍTICA</title>
-
+<title>WAR ROOM TERMINAL - V5.0 LIVE DATA</title>
 <style>
-  body { margin: 0; background: #050505; color: #00ff9d; font-family: 'Courier New', Courier, monospace; overflow: hidden; user-select: none; }
+  body { margin: 0; background: #050505; color: #00ff9d; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; }
   body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; }
-
   .hud-box { position: absolute; background: rgba(0, 20, 0, 0.85); border: 1px solid #00ff9d; box-shadow: 0 0 10px rgba(0,255,157,0.2); z-index: 10; padding: 15px; border-radius: 5px; }
-  #hud-main { top: 20px; left: 20px; border-left: 4px solid #00ff9d; }
-  
-  /* LEYENDA AÑADIDA */
+  #hud-main { top: 20px; left: 20px; border-left: 4px solid #00ff9d; max-width: 350px; }
   .leyenda { margin-top: 15px; font-size: 0.75em; border-top: 1px solid #00ff9d; padding-top: 10px; }
   .leyenda div { margin-bottom: 5px; }
   .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
-
   #info-panel { top: 20px; right: 20px; width: 350px; display: none; border-right: 4px solid #ff003c; border-left: 1px solid #ff003c; color: #fff; background: rgba(10, 0, 0, 0.9); box-shadow: 0 0 20px rgba(255,0,0,0.3); }
   #info-panel h2 { color: #ff003c; text-shadow: 0 0 5px red; margin-top: 0; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.2em;}
   #info-panel .data-label { color: #00ff9d; font-weight: bold; font-size: 0.8em; margin-top: 10px; display: block; }
   #info-panel .data-value { color: #ddd; font-size: 0.9em; margin-bottom: 10px; display: block; line-height: 1.4; }
-  
-  .btn-cerrar { background: #ff003c; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; letter-spacing: 2px; margin-top: 20px; text-transform: uppercase; }
+  .btn-cerrar { background: #ff003c; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 20px; text-transform: uppercase; }
   .btn-cerrar:hover { background: #fff; color: #ff003c; }
-
   .crosshair { position: absolute; top: 50%; left: 50%; width: 40px; height: 40px; transform: translate(-50%, -50%); border: 1px solid rgba(0, 255, 157, 0.3); border-radius: 50%; z-index: 1; pointer-events: none; }
   .crosshair::before { content: ""; position: absolute; top: 20px; left: -10px; width: 60px; height: 1px; background: rgba(0, 255, 157, 0.3); }
   .crosshair::after { content: ""; position: absolute; top: -10px; left: 20px; width: 1px; height: 60px; background: rgba(0, 255, 157, 0.3); }
 </style>
 </head>
-
 <body>
 
 <div class="hud-box" id="hud-main">
-  <b style="font-size: 1.2em; letter-spacing: 2px;">🛰️ WAR ROOM TERMINAL</b><br>
-  <span style="font-size: 0.8em; color: #aaa;">SISTEMA DE INTELIGENCIA MULTICAPA</span><br>
+  <b style="font-size: 1.2em;">🛰️ WAR ROOM TERMINAL</b><br>
+  <span style="font-size: 0.8em; color: #aaa;">RED GUBERNAMENTAL SEGURA</span><br>
   <div style="margin-top: 10px; font-size: 0.8em;">
-    ESTADO: <span id="sys-status" style="color: #00ff9d;">SISTEMA ONLINE (AUTO-REFRESCO 5 MIN)</span>
+    ESTADO: <span id="sys-status" style="color: yellow;">DESCARGANDO INTELIGENCIA ONU...</span>
   </div>
-  
   <div class="leyenda">
-    <div><span class="dot" style="background: #ff003c; box-shadow: 0 0 5px red;"></span> OPERACIÓN MILITAR (Radar)</div>
-    <div><span class="dot" style="background: #ffaa00;"></span> DISTURBIOS / SOCIAL</div>
-    <div><span class="dot" style="background: #0088ff; border-radius: 0;"></span> CRISIS POLÍTICA (País completo)</div>
+    <div><span class="dot" style="background: #ff003c; box-shadow: 0 0 5px red;"></span> MILITAR (Ataques/Tropas)</div>
+    <div><span class="dot" style="background: #ffaa00;"></span> SOCIAL (Disturbios/Protestas)</div>
+    <div><span class="dot" style="background: #0088ff; border-radius: 0;"></span> POLÍTICA (Gobierno/Crisis)</div>
   </div>
 </div>
 
 <div class="hud-box" id="info-panel">
   <h2 id="panel-header">INFORME CLASIFICADO</h2>
-  <span class="data-label">CLASIFICACIÓN</span>
-  <span class="data-value" id="panel-title" style="color: yellow; font-weight: bold;">--</span>
-  <span class="data-label">ANÁLISIS DE INTELIGENCIA</span>
-  <span class="data-value" id="panel-desc">--</span>
+  <span class="data-label">FECHA DE REPORTE</span>
+  <span class="data-value" id="panel-date" style="color: yellow;">--</span>
+  <span class="data-label">ASUNTO</span>
+  <span class="data-value" id="panel-title" style="font-weight: bold;">--</span>
+  <span class="data-label">MÁS INFORMACIÓN</span>
+  <span class="data-value" id="panel-link">--</span>
   <button class="btn-cerrar" onclick="cerrarPanel()">CERRAR COMUNICACIÓN</button>
 </div>
 
@@ -61,95 +54,125 @@
 <script src="https://unpkg.com/globe.gl"></script>
 
 <script>
-// 1. INICIALIZAR GLOBO HD
 const globe = Globe()(document.getElementById("globeViz"))
   .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-water.png")
   .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
   .backgroundColor("#000000")
-  .pointOfView({ lat: 25, lng: 10, altitude: 2.2 }); // Centrado para ver Europa/África/Oriente
+  .pointOfView({ lat: 25, lng: 20, altitude: 2.5 });
 
-// --- DATOS DEL SIMULACRO INICIAL ---
+// Variables para separar los datos
+let puntosMapa = [];
+let paisesEnCrisisAzul = [];
 
-// 🔴 MILITAR (Rojo) y 🟠 SOCIAL (Naranja) -> Van por coordenadas exactas
-const eventosPuntuales = [
-  { tipo: "MILITAR", titulo: "OFENSIVA TÁCTICA DETECTADA", desc: "Movimientos de artillería pesada en la frontera este.", lat: 48.3, lng: 35.0, color: "#ff003c" }, // Ucrania
-  { tipo: "MILITAR", titulo: "BOMBARDEO COSTERO", desc: "Instalaciones portuarias comprometidas tras ataque aéreo.", lat: 33.8, lng: 35.5, color: "#ff003c" }, // Líbano
-  { tipo: "SOCIAL", titulo: "PROTESTAS MASIVAS", desc: "Disturbios en la capital. Se reportan barricadas y enfrentamientos con las fuerzas de seguridad.", lat: 48.85, lng: 2.35, color: "#ffaa00" }, // París
-  { tipo: "SOCIAL", titulo: "HUELGA GENERAL VIOLENTA", desc: "Bloqueo de refinerías y carreteras principales. El gobierno declara el estado de emergencia local.", lat: -34.6, lng: -58.3, color: "#ffaa00" } // Buenos Aires
-];
+async function descargarDatosONU() {
+    try {
+        // Pedimos los 150 últimos reportes con coordenadas exactas a la ONU (ReliefWeb)
+        const url = 'https://api.reliefweb.int/v1/reports?appname=war_room&filter[field]=primary_country.location&limit=150&sort[]=date:desc&profile=full';
+        const res = await fetch(url);
+        const json = await res.json();
+        
+        puntosMapa = [];
+        paisesEnCrisisAzul = [];
 
-// 🔵 POLÍTICA (Azul) -> Países afectados por crisis gubernamental (Nombres en inglés según la base de datos oficial)
-const paisesEnCrisisPolitica = ["United Kingdom", "Venezuela"];
+        json.data.forEach(alerta => {
+            const campos = alerta.fields;
+            if(campos.primary_country && campos.primary_country.location) {
+                const titulo = campos.title;
+                const pais = campos.primary_country.name;
+                const textoPlano = titulo.toLowerCase();
+                
+                // MOTOR DE CLASIFICACIÓN INTELIGENTE
+                let tipo = "POLÍTICA"; 
+                let color = "#0088ff"; 
+                
+                // 1. Detección Militar
+                if(textoPlano.match(/attack|conflict|war|military|army|clash|strike|bomb/)) {
+                    tipo = "MILITAR"; color = "#ff003c";
+                } 
+                // 2. Detección Social/Disturbios
+                else if (textoPlano.match(/protest|riot|demonstration|strike|march|civil/)) {
+                    tipo = "SOCIAL"; color = "#ffaa00";
+                }
 
-// 2. CARGAR LAS FRONTERAS DEL MUNDO Y PINTAR LA POLÍTICA
-fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
-  .then(res => res.json())
-  .then(countries => {
-    globe.polygonsData(countries.features)
-      .polygonCapColor(d => {
-        // Si el país está en nuestra lista de crisis política, lo pintamos de azul eléctrico
-        if (paisesEnCrisisPolitica.includes(d.properties.ADMIN)) {
-          return 'rgba(0, 136, 255, 0.4)'; 
-        }
-        // Si no, lo dejamos transparente (solo se ve la textura de la tierra)
-        return 'rgba(0,0,0,0)'; 
-      })
-      .polygonSideColor(() => 'rgba(0, 255, 157, 0.05)') // Bordes muy tenues
-      .polygonStrokeColor(d => paisesEnCrisisPolitica.includes(d.properties.ADMIN) ? '#0088ff' : '#111')
-      .polygonLabel(d => {
-          if(paisesEnCrisisPolitica.includes(d.properties.ADMIN)) {
-              return `<div style="background:rgba(0,0,0,0.8); border:1px solid #0088ff; color:white; padding:5px; font-family:monospace;">⚠️ CRISIS POLÍTICA: ${d.properties.ADMIN.toUpperCase()}</div>`;
-          }
-      });
-  });
+                // 3. Procesamiento (Si es política, guardamos el país para pintarlo azul. Si es Militar/Social, hacemos punto rojo/naranja)
+                if (tipo === "POLÍTICA") {
+                    if (!paisesEnCrisisAzul.includes(pais)) paisesEnCrisisAzul.push(pais);
+                } else {
+                    puntosMapa.push({
+                        lat: campos.primary_country.location.lat,
+                        lng: campos.primary_country.location.lon,
+                        titulo: titulo,
+                        tipo: tipo,
+                        color: color,
+                        fecha: new Date(campos.date.created).toLocaleDateString(),
+                        link: campos.url
+                    });
+                }
+            }
+        });
 
-// 3. DIBUJAR PUNTOS MILITARES Y SOCIALES
-function dibujarEventos(datos) {
-    globe.pointsData(datos)
+        dibujarMapa();
+        cargarFronterasPaisesAzules();
+        document.getElementById("sys-status").innerText = `SISTEMA ONLINE (${puntosMapa.length} FOCOS DETECTADOS)`;
+        document.getElementById("sys-status").style.color = "#00ff9d";
+
+    } catch (error) {
+        document.getElementById("sys-status").innerText = "ERROR CRÍTICO DE ENLACE";
+        document.getElementById("sys-status").style.color = "red";
+    }
+}
+
+function dibujarMapa() {
+    globe.pointsData(puntosMapa)
       .pointColor("color")
       .pointAltitude(0.08)
-      .pointRadius(1.2)
+      .pointRadius(0.8) // Tamaño equilibrado para ver muchos puntos
       .pointResolution(32)
-      .pointLabel(d => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid ${d.color}; color:white; font-family:monospace;">${d.tipo === 'MILITAR' ? '🔴' : '🟠'} ${d.titulo}</div>`)
+      .pointLabel(d => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid ${d.color}; color:white; font-family:monospace;">${d.tipo}: ${d.titulo.substring(0, 50)}...</div>`)
       .onPointClick((point) => {
           if (!point) return;
           document.getElementById("info-panel").style.display = "block";
-          document.getElementById("panel-header").innerText = point.tipo === 'MILITAR' ? "REPORTE DE COMBATE" : "INCIDENTE SOCIAL";
+          document.getElementById("panel-header").innerText = `REPORTE: ${point.tipo}`;
           document.getElementById("panel-header").style.color = point.color;
+          document.getElementById("panel-date").innerText = point.fecha;
           document.getElementById("panel-title").innerText = point.titulo;
-          document.getElementById("panel-desc").innerText = point.desc;
+          document.getElementById("panel-link").innerHTML = `<a href="${point.link}" target="_blank" style="color:#00ff9d;">[ VER DOCUMENTO COMPLETO ]</a>`;
       });
 
-    // Añadir radar (anillos) SOLO a los eventos MILITARES
-    const eventosMilitares = datos.filter(d => d.tipo === "MILITAR");
-    globe.ringsData(eventosMilitares)
+    // Anillos de radar SOLO para los ataques militares
+    globe.ringsData(puntosMapa.filter(p => p.tipo === "MILITAR"))
       .ringColor("color")
-      .ringMaxRadius(4)
+      .ringMaxRadius(3)
       .ringPropagationSpeed(1.5)
       .ringRepeatPeriod(1500);
 }
 
-// Pintar la primera vez
-dibujarEventos(eventosPuntuales);
-
-// Estilo del ratón
-globe.onPointHover(p => document.body.style.cursor = p ? "crosshair" : "default");
-globe.onPolygonHover(p => document.body.style.cursor = p && paisesEnCrisisPolitica.includes(p.properties.ADMIN) ? "help" : "default");
+function cargarFronterasPaisesAzules() {
+    fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
+      .then(res => res.json())
+      .then(countries => {
+        globe.polygonsData(countries.features)
+          .polygonCapColor(d => {
+            // Comprobación difusa para asegurar que los nombres de los países coinciden
+            const nombreMundial = d.properties.ADMIN.toLowerCase();
+            const coincide = paisesEnCrisisAzul.some(p => nombreMundial.includes(p.toLowerCase()) || p.toLowerCase().includes(nombreMundial));
+            return coincide ? 'rgba(0, 136, 255, 0.4)' : 'rgba(0,0,0,0)'; 
+          })
+          .polygonSideColor(() => 'rgba(0, 255, 157, 0.05)')
+          .polygonStrokeColor(d => {
+            const nombreMundial = d.properties.ADMIN.toLowerCase();
+            const coincide = paisesEnCrisisAzul.some(p => nombreMundial.includes(p.toLowerCase()) || p.toLowerCase().includes(nombreMundial));
+            return coincide ? '#0088ff' : '#111';
+          });
+      });
+}
 
 function cerrarPanel() { document.getElementById("info-panel").style.display = "none"; }
+globe.onPointHover(p => document.body.style.cursor = p ? "crosshair" : "default");
 
-// 4. BUCLE DE AUTO-ACTUALIZACIÓN (Cada 5 minutos)
-// Aquí es donde en el futuro inyectaremos la llamada real a la API. Por ahora, refresca los datos estáticos para mantener el mapa vivo.
-setInterval(() => {
-    document.getElementById("sys-status").innerText = "ACTUALIZANDO BASES DE DATOS...";
-    document.getElementById("sys-status").style.color = "yellow";
-    
-    setTimeout(() => {
-        dibujarEventos(eventosPuntuales); // Refresca los puntos
-        document.getElementById("sys-status").innerText = "SISTEMA ONLINE (AUTO-REFRESCO 5 MIN)";
-        document.getElementById("sys-status").style.color = "#00ff9d";
-    }, 2000); // Finge un tiempo de carga de 2 segundos para dar realismo
-}, 300000); // 300.000 ms = 5 minutos
+// Iniciar descarga y programar refresco cada 5 minutos
+descargarDatosONU();
+setInterval(descargarDatosONU, 300000);
 
 </script>
 </body>
