@@ -1,185 +1,163 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8">
-    <title>DASHBOARD DE ANALISTA OFFLINE V1.0</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
-    <style>
-        :root { --green: #0f0; --dark-green: #051; --alert: #ff003c; --bg: #000; --widget-bg: rgba(0, 15, 0, 0.9); }
-        body { margin: 0; background-color: var(--bg); color: var(--green); font-family: 'Courier New', Courier, monospace; overflow: hidden; height: 100vh; display: grid; grid-template-rows: auto 1fr; user-select: none; }
-        
-        /* Efecto de pantalla CRT militar */
-        body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; opacity: 0.6; }
+<meta charset="UTF-8">
+<title>WAR ROOM - SAT-SIM TERMINAL V8.1</title>
+<style>
+  body { margin: 0; background: #000; color: #00ff9d; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; }
+  body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; opacity: 0.6; }
 
-        header { padding: 15px; border-bottom: 2px solid var(--green); background: var(--widget-bg); box-shadow: 0 0 10px rgba(0,255,0,0.3); }
-        .grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; box-sizing: border-box; }
-        .widget { background: var(--widget-bg); border: 1px solid var(--green); padding: 15px; border-radius: 4px; box-sizing: border-box; box-shadow: 0 0 10px rgba(0,255,0,0.1); }
-        h2 { margin-top: 0; font-size: 1.1em; border-bottom: 1px solid var(--green); padding-bottom: 5px; text-transform: uppercase; color: #fff; text-shadow: 0 0 5px var(--green); }
-        
-        /* Bloc de Notas Encriptado */
-        #notepad { display: flex; flex-direction: column; height: 100%; }
-        textarea { flex-grow: 1; background: transparent; border: 1px dashed var(--green); color: var(--green); padding: 10px; font-family: inherit; font-size: 0.95em; resize: none; margin-bottom: 10px; }
-        input[type="password"] { background: var(--bg); border: 1px solid var(--dark-green); color: var(--green); padding: 8px; font-family: inherit; margin-bottom: 10px; }
-        .btn-group { display: flex; gap: 10px; }
-        button { flex-grow: 1; padding: 10px; font-family: inherit; cursor: pointer; border: 1px solid var(--green); font-weight: bold; background: #000; color: var(--green); text-transform: uppercase; }
-        button:hover { background: var(--green); color: #000; }
-        button.alert { border-color: var(--alert); color: var(--alert); }
-        button.alert:hover { background: var(--alert); color: #fff; }
-
-        /* Widget de Tiempo */
-        .time-box { text-align: center; }
-        #clock { font-size: 2.2em; font-weight: bold; margin-bottom: 5px; color: #fff; text-shadow: 0 0 5px #fff; }
-        #date { font-size: 0.9em; margin-bottom: 15px; color: #aaa; }
-        #stopwatch { font-size: 1.8em; color: orange; border: 1px solid orange; padding: 5px; margin-bottom: 10px; }
-        .sw-btn-group { display: flex; gap: 5px; }
-        .sw-btn-group button { border-color: orange; color: orange; font-size: 0.8em; padding: 5px; }
-        .sw-btn-group button:hover { background: orange; color: #000; }
-
-        /* Generador de Claves */
-        #pass-generator input { width: 100%; background: var(--bg); border: 1px solid var(--green); color: var(--green); padding: 8px; font-family: inherit; margin-bottom: 10px; font-size: 0.9em;}
-    </style>
+  .hud-box { position: absolute; background: rgba(0, 20, 0, 0.9); border: 1px solid #00ff9d; box-shadow: 0 0 15px rgba(0,255,157,0.2); z-index: 10; padding: 15px; border-radius: 3px; }
+  #hud-main { top: 20px; left: 20px; border-left: 4px solid #00ff9d; max-width: 350px; }
+  .leyenda { margin-top: 15px; font-size: 0.75em; border-top: 1px solid #00ff9d; padding-top: 10px; }
+  .leyenda div { margin-bottom: 5px; }
+  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
+  #info-panel { top: 20px; right: 20px; width: 350px; display: none; border-right: 4px solid #fff; border-left: 1px solid #fff; color: #fff; background: rgba(0, 0, 0, 0.95); }
+  #info-panel h2 { color: #fff; text-shadow: 0 0 5px #fff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.2em; margin-top:0;}
+  .data-label { color: #00ff9d; font-weight: bold; font-size: 0.8em; margin-top: 10px; display: block; }
+  .data-value { color: #ddd; font-size: 0.9em; margin-bottom: 10px; display: block; line-height: 1.4; }
+  .btn-cerrar { background: #444; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 20px; text-transform: uppercase; }
+  .btn-cerrar:hover { background: #fff; color: #000; }
+</style>
 </head>
 <body>
-    <header>
-        <b>Terminal de Analista: <span style="color:#fff">OFFLINE_COMMAND</span></b> | Estado: <b style="color:#fff">100% LOCAL (CIFRADO AES)</b>
-    </header>
 
-    <main class="grid-main">
-        <section class="widget" id="notepad">
-            <h2>🛡️ Bloc de Notas Encriptado</h2>
-            <textarea id="note-content" placeholder="Escribe aquí tu análisis clasificado..."></textarea>
-            <input type="password" id="note-key" placeholder="Introduce clave de encriptación (AES)">
-            <div class="btn-group">
-                <button onclick="saveAndEncrypt()" title="Encriptar y guardar en el navegador">🔒 Cifrar & Guardar</button>
-                <button onclick="decryptAndLoad()" title="Usar clave para descifrar notas">🔑 Descifrar</button>
-                <button class="alert" onclick="wipeNotes()" title="Borrar todo inmediatamente">💣 BORRADO</button>
-            </div>
-            <small style="font-size: 0.7em; color: #aaa; margin-top: 5px;">*Tus notas encriptadas se guardan en este navegador y jamás viajan por internet.</small>
-        </section>
+<div class="hud-box" id="hud-main">
+  <b style="font-size: 1.2em;">🛰️ SAT-SIM TERMINAL V8.1</b><br>
+  <span style="font-size: 0.8em; color: #aaa;">OFFLINE: MECÁNICA ORBITAL</span><br>
+  <div style="margin-top: 10px; font-size: 0.8em;">
+    ESTADO: <span id="sys-status" style="color: #00ff9d;">EJECUTANDO SIMULACIÓN FÍSICA PURE...</span>
+  </div>
+  <div class="leyenda">
+    <div><span class="dot" style="background: #ff003c;"></span> LEO (Baja: ISS, Sat-Espía)</div>
+    <div><span class="dot" style="background: #ffaa00;"></span> MEO (Media: GPS, Galileo)</div>
+    <div><span class="dot" style="background: #0088ff;"></span> GEO (Geosíncrona: Telecom)</div>
+  </div>
+</div>
 
-        <aside style="display: flex; flex-direction: column; gap: 20px;">
-            <div class="widget time-box">
-                <h2>🛰️ Tiempo de Misión</h2>
-                <div id="clock">00:00:00</div>
-                <div id="date">--/--/--</div>
-                <hr style="border:0.5px solid var(--dark-green);">
-                <span class="data-label" style="font-size: 0.8em;">CRONÓMETRO OPERATIVO</span>
-                <div id="stopwatch">00:00:00</div>
-                <div class="sw-btn-group">
-                    <button onclick="startSW()">INICIAR</button>
-                    <button onclick="stopSW()">DETENER</button>
-                    <button onclick="resetSW()">RESET</button>
-                </div>
-            </div>
+<div class="hud-box" id="info-panel">
+  <h2 id="panel-header">DATOS TÉCNICOS</h2>
+  <span class="data-label">PARÁMETROS ORBITALES (Kepler)</span>
+  <span class="data-value" id="panel-title" style="font-weight: bold;">--</span>
+  <span class="data-label">VELOCIDAD TÁCTICA</span>
+  <span class="data-value" id="panel-desc">--</span>
+  <button class="btn-cerrar" onclick="cerrarPanel()">CERRAR INFORME</button>
+</div>
 
-            <div class="widget" id="pass-generator">
-                <h2>🔑 Generador de Contraseñas Seguras</h2>
-                <input type="text" id="gen-password" readonly placeholder="Clave generada">
-                <div style="display: flex; gap: 10px;">
-                    <button onclick="generatePassword()" style="font-size: 0.8em; border-color:#0088ff; color:#0088ff;">Generar Clave</button>
-                    <button onclick="copyPassword()" style="font-size: 0.8em; border-color:#fff; color:#fff;">Copiar</button>
-                </div>
-            </div>
-        </aside>
-    </main>
+<div id="globeViz"></div>
 
-    <script>
-        // --- RELOJ Y FECHA ---
-        function updateClock() {
-            const now = new Date();
-            document.getElementById('clock').innerText = now.toLocaleTimeString();
-            document.getElementById('date').innerText = now.toLocaleDateString();
-        }
-        setInterval(updateClock, 1000);
-        updateClock();
+<script src="https://unpkg.com/globe.gl"></script>
 
-        // --- BLOC DE NOTAS ENCRIPTADO (LOCALSTORAGE + AES) ---
-        // Intentar cargar notas encriptadas al abrir
-        const savedNotes = localStorage.getItem('analystNotesV1');
-        if (savedNotes) {
-            document.getElementById('note-content').value = "-- [ NOTAS DETECTADAS - ESTÁN ENCRIPTADAS ] --";
-        }
+<script>
+// Usamos la textura HD para que se vea nítida al hacer zoom
+const globe = Globe()(document.getElementById("globeViz"))
+  .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-water.png")
+  .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
+  .backgroundColor("#000000")
+  .pointOfView({ lat: 25, lng: 35, altitude: 2.2 });
 
-        // Guardar y encriptar
-        function saveAndEncrypt() {
-            const text = document.getElementById('note-content').value;
-            const key = document.getElementById('note-key').value;
+// --- DEFINICIÓN DE ÓRBITAS (Kepler puro, sin Wifi) ---
+// r = Semieje mayor (km), i = Inclinación (deg), t_p = Período (seg), color
+const simulacionOrbitas = [
+  { id: "ISS", r: 6371 + 408, i: 51.6, t_p: 5540, color: "#ff003c" },
+  { id: "GPS-A1", r: 6371 + 20200, i: 55, t_p: 43200, color: "#ffaa00" },
+  { id: "SENTINEL-3", r: 6371 + 814, i: 98.6, t_p: 6060, color: "#ff003c" },
+  { id: "GEO-TEL1", r: 6371 + 35786, i: 0, t_p: 86400, color: "#0088ff" },
+  { id: "SPY-SAT-5", r: 6371 + 250, i: 95.1, t_p: 5370, color: "#ff003c" }
+];
 
-            if (text.length === 0) { alert('El bloc de notas está vacío.'); return; }
-            if (key.length < 4) { alert('Por seguridad, usa una clave de al menos 4 caracteres.'); return; }
+// Generar las trayectorias de las órbitas (curvas fijas)
+function generarCurvaOrbital(r, i) {
+    const coords = [];
+    const radIncl = i * Math.PI / 180;
+    const radioNormalizado = (r - 6371) / 3000; // Ajuste visual de altitud
+    for (let angle = 0; angle <= 360; angle += 1) {
+        const radAngle = angle * Math.PI / 180;
+        // Matemáticas para rotar el plano orbital
+        let x = radioNormalizado * Math.cos(radAngle);
+        let y = radioNormalizado * Math.sin(radAngle);
+        // Rotación por inclinación
+        const yNew = y * Math.cos(radIncl);
+        const zNew = y * Math.sin(radIncl);
+        
+        // Conversión a Lat/Lng/Alt para el globo
+        const alt = Math.sqrt(x*x + zNew*zNew);
+        const lat = Math.atan2(yNew, alt) * 180 / Math.PI;
+        const lng = Math.atan2(zNew, x) * 180 / Math.PI;
+        coords.push([lat, lng, radioNormalizado * 0.1]); // Pequeña altitud visual
+    }
+    return coords;
+}
 
-            try {
-                // Encriptar AES usando la librería CryptoJS
-                const encrypted = CryptoJS.AES.encrypt(text, key).toString();
-                // Guardar en LocalStorage (la memoria de tu navegador)
-                localStorage.setItem('analystNotesV1', encrypted);
-                document.getElementById('note-key').value = ''; // Limpiar campo clave
-                alert('Notas encriptadas y guardadas localmente.');
-            } catch (e) {
-                alert('Fallo en la encriptación.');
-            }
-        }
+// Pintar las líneas de órbita fijos
+globe.pathsData(simulacionOrbitas.map(d => ({
+    coords: generarCurvaOrbital(d.r, d.i),
+    color: d.color,
+    name: d.id
+})))
+  .pathColor("color")
+  .pathDashLength(0.01)
+  .pathDashGap(0.005)
+  .pathDashAnimateTime(5000)
+  .pathStroke(1);
 
-        // Desencriptar y cargar
-        function decryptAndLoad() {
-            const encryptedNotes = localStorage.getItem('analystNotesV1');
-            const key = document.getElementById('note-key').value;
+// Calcular la posición exacta de cada satélite basándose en el tiempo actual
+function calcularPosicionesSatelites() {
+    const time = Date.now() / 1000; // Segundos
+    const puntosActuales = simulacionOrbitas.map(orb => {
+        // Cálculo del ángulo orbital (Kepler simplified: ω * t)
+        const angularVelocity = (2 * Math.PI) / orb.t_p; // Rad/sec
+        const angle = angularVelocity * time; // Radianes
+        const radIncl = orb.i * Math.PI / 180;
+        
+        // Matemáticas de rotación orbital
+        let x = Math.cos(angle);
+        let y = Math.sin(angle);
+        
+        const yNew = y * Math.cos(radIncl);
+        const zNew = y * Math.sin(radIncl);
+        
+        const alt = Math.sqrt(x*x + zNew*zNew);
+        const lat = Math.atan2(yNew, alt) * 180 / Math.PI;
+        const lng = Math.atan2(zNew, x) * 180 / Math.PI;
 
-            if (!encryptedNotes) { alert('No hay notas guardadas en este navegador.'); return; }
-            if (key.length < 4) { alert('Introduce una clave válida.'); return; }
+        return {
+            lat: lat,
+            lng: lng,
+            name: orb.id,
+            color: orb.color,
+            alt_actual: orb.r,
+            velocidad: Math.sqrt(398600 / orb.r) // v = √(GM/r) km/s
+        };
+    });
 
-            try {
-                // Desencriptar AES
-                const bytes = CryptoJS.AES.decrypt(encryptedNotes, key);
-                const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+    // Actualizar los puntos en el mapa
+    globe.pointsData(puntosActuales)
+      .pointColor("color")
+      .pointAltitude(p => (p.alt_actual - 6371) / 3000 * 0.1) // Ajuste visual altitud
+      .pointRadius(1)
+      .pointResolution(32)
+      .pointLabel(p => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid ${p.color}; color:white; font-family:monospace;">🛰️ ${p.name} (MODO OFFLINE)</div>`)
+      .onPointClick((p) => {
+          if (!p) return;
+          document.getElementById("info-panel").style.display = "block";
+          document.getElementById("panel-header").innerText = `INFORME: ${p.name}`;
+          document.getElementById("panel-header").style.color = p.color;
+          document.getElementById("panel-title").innerHTML = `
+            Semieje Mayor: ${p.alt_actual.toFixed(1)} km<br>
+            Altitud: ${(p.alt_actual - 6371).toFixed(1)} km<br>
+            Inclinación: ${simulacionOrbitas.find(o=>o.id===p.name).i}°
+          `;
+          document.getElementById("panel-desc").innerText = `${p.velocidad.toFixed(2)} km/s (Relatividad Especial)`;
+      });
+}
 
-                if (decrypted) {
-                    document.getElementById('note-content').value = decrypted;
-                    alert('Notas descifradas con éxito.');
-                } else {
-                    alert('Clave incorrecta. El descifrado ha fallado.');
-                    document.getElementById('note-content').value = "-- [ CLAVE INCORRECTA ] --";
-                }
-            } catch (e) {
-                alert('Clave incorrecta. Fallo crítico de descifrado.');
-            }
-        }
+globe.onPointHover(p => document.body.style.cursor = p ? "crosshair" : "default");
 
-        // Borrado de emergencia
-        function wipeNotes() {
-            if (confirm("⚠️ ¿Estás seguro? Se borrarán las notas encriptadas para siempre.")) {
-                localStorage.removeItem('analystNotesV1');
-                document.getElementById('note-content').value = "";
-                document.getElementById('note-key').value = "";
-                alert('Bases de datos locales eliminadas.');
-            }
-        }
+// Actualizar posiciones cada 50 milisegundos para simular movimiento suave
+setInterval(calcularPosicionesSatelites, 50);
 
-        // --- CRONÓMETRO DE OPERACIÓN ---
-        let swInterval;
-        let swTime = 0; // segundos
-        function formatTime(t) { return new Date(t * 1000).toISOString().substr(11, 8); }
-        function startSW() { if(!swInterval) swInterval = setInterval(() => { swTime++; document.getElementById('stopwatch').innerText = formatTime(swTime); }, 1000); }
-        function stopSW() { clearInterval(swInterval); swInterval = null; }
-        function resetSW() { stopSW(); swTime = 0; document.getElementById('stopwatch').innerText = "00:00:00"; }
-
-        // --- GENERADOR DE CLAVES (SECCIÓN LOCAL) ---
-        function generatePassword() {
-            const length = 24;
-            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+=-[]{};:,.<>?";
-            let retVal = "";
-            for (let i = 0, n = charset.length; i < length; ++i) {
-                retVal += charset.charAt(Math.floor(Math.random() * n));
-            }
-            document.getElementById('gen-password').value = retVal;
-        }
-        function copyPassword() {
-            const passField = document.getElementById('gen-password');
-            passField.select();
-            passField.setSelectionRange(0, 99999);
-            navigator.clipboard.writeText(passField.value);
-            alert("Contraseña copiada al portapapeles.");
-        }
-    </script>
+function cerrarPanel() { document.getElementById("info-panel").style.display = "none"; }
+</script>
 </body>
 </html>
