@@ -1,174 +1,185 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="UTF-8">
-<title>WAR ROOM TERMINAL - V8.0 FINAL</title>
-<style>
-  body { margin: 0; background: #000; color: #00ff9d; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; }
-  body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; pointer-events: none; }
-  .hud-box { position: absolute; background: rgba(0, 20, 0, 0.9); border: 1px solid #00ff9d; box-shadow: 0 0 15px rgba(0,255,157,0.2); z-index: 10; padding: 15px; border-radius: 3px; }
-  #hud-main { top: 20px; left: 20px; border-left: 4px solid #00ff9d; max-width: 350px; }
-  .leyenda { margin-top: 15px; font-size: 0.75em; border-top: 1px solid #00ff9d; padding-top: 10px; }
-  .leyenda div { margin-bottom: 5px; }
-  .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
-  #info-panel { top: 20px; right: 20px; width: 350px; display: none; border-right: 4px solid #ff003c; border-left: 1px solid #ff003c; color: #fff; background: rgba(10, 0, 0, 0.95); }
-  #info-panel h2 { color: #ff003c; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.2em; margin-top:0;}
-  .data-label { color: #00ff9d; font-weight: bold; font-size: 0.8em; margin-top: 10px; display: block; }
-  .data-value { color: #ddd; font-size: 0.9em; margin-bottom: 10px; display: block; line-height: 1.4; }
-  .btn-cerrar { background: #ff003c; color: white; border: none; padding: 10px; width: 100%; cursor: pointer; font-weight: bold; margin-top: 20px; text-transform: uppercase; }
-  .btn-cerrar:hover { background: #fff; color: #ff003c; }
-</style>
+    <meta charset="UTF-8">
+    <title>DASHBOARD DE ANALISTA OFFLINE V1.0</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <style>
+        :root { --green: #0f0; --dark-green: #051; --alert: #ff003c; --bg: #000; --widget-bg: rgba(0, 15, 0, 0.9); }
+        body { margin: 0; background-color: var(--bg); color: var(--green); font-family: 'Courier New', Courier, monospace; overflow: hidden; height: 100vh; display: grid; grid-template-rows: auto 1fr; user-select: none; }
+        
+        /* Efecto de pantalla CRT militar */
+        body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; opacity: 0.6; }
+
+        header { padding: 15px; border-bottom: 2px solid var(--green); background: var(--widget-bg); box-shadow: 0 0 10px rgba(0,255,0,0.3); }
+        .grid-main { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; padding: 20px; box-sizing: border-box; }
+        .widget { background: var(--widget-bg); border: 1px solid var(--green); padding: 15px; border-radius: 4px; box-sizing: border-box; box-shadow: 0 0 10px rgba(0,255,0,0.1); }
+        h2 { margin-top: 0; font-size: 1.1em; border-bottom: 1px solid var(--green); padding-bottom: 5px; text-transform: uppercase; color: #fff; text-shadow: 0 0 5px var(--green); }
+        
+        /* Bloc de Notas Encriptado */
+        #notepad { display: flex; flex-direction: column; height: 100%; }
+        textarea { flex-grow: 1; background: transparent; border: 1px dashed var(--green); color: var(--green); padding: 10px; font-family: inherit; font-size: 0.95em; resize: none; margin-bottom: 10px; }
+        input[type="password"] { background: var(--bg); border: 1px solid var(--dark-green); color: var(--green); padding: 8px; font-family: inherit; margin-bottom: 10px; }
+        .btn-group { display: flex; gap: 10px; }
+        button { flex-grow: 1; padding: 10px; font-family: inherit; cursor: pointer; border: 1px solid var(--green); font-weight: bold; background: #000; color: var(--green); text-transform: uppercase; }
+        button:hover { background: var(--green); color: #000; }
+        button.alert { border-color: var(--alert); color: var(--alert); }
+        button.alert:hover { background: var(--alert); color: #fff; }
+
+        /* Widget de Tiempo */
+        .time-box { text-align: center; }
+        #clock { font-size: 2.2em; font-weight: bold; margin-bottom: 5px; color: #fff; text-shadow: 0 0 5px #fff; }
+        #date { font-size: 0.9em; margin-bottom: 15px; color: #aaa; }
+        #stopwatch { font-size: 1.8em; color: orange; border: 1px solid orange; padding: 5px; margin-bottom: 10px; }
+        .sw-btn-group { display: flex; gap: 5px; }
+        .sw-btn-group button { border-color: orange; color: orange; font-size: 0.8em; padding: 5px; }
+        .sw-btn-group button:hover { background: orange; color: #000; }
+
+        /* Generador de Claves */
+        #pass-generator input { width: 100%; background: var(--bg); border: 1px solid var(--green); color: var(--green); padding: 8px; font-family: inherit; margin-bottom: 10px; font-size: 0.9em;}
+    </style>
 </head>
 <body>
+    <header>
+        <b>Terminal de Analista: <span style="color:#fff">OFFLINE_COMMAND</span></b> | Estado: <b style="color:#fff">100% LOCAL (CIFRADO AES)</b>
+    </header>
 
-<div class="hud-box" id="hud-main">
-  <b style="font-size: 1.2em;">🛰️ WAR ROOM (V8.0 FINAL)</b><br>
-  <span style="font-size: 0.8em; color: #aaa;">SISTEMA MULTICAPA BLINDADO</span><br>
-  <div style="margin-top: 10px; font-size: 0.8em;">
-    ESTADO: <span id="sys-status" style="color: yellow;">INICIALIZANDO SATÉLITES...</span>
-  </div>
-  <div class="leyenda">
-    <div><span class="dot" style="background: #ff003c; box-shadow: 0 0 5px red;"></span> MILITAR (Ataques/Operaciones)</div>
-    <div><span class="dot" style="background: #ffaa00;"></span> SOCIAL (Disturbios/Tensión)</div>
-    <div><span class="dot" style="background: #0088ff; border-radius: 0;"></span> POLÍTICA (Crisis de Gobierno)</div>
-  </div>
-</div>
+    <main class="grid-main">
+        <section class="widget" id="notepad">
+            <h2>🛡️ Bloc de Notas Encriptado</h2>
+            <textarea id="note-content" placeholder="Escribe aquí tu análisis clasificado..."></textarea>
+            <input type="password" id="note-key" placeholder="Introduce clave de encriptación (AES)">
+            <div class="btn-group">
+                <button onclick="saveAndEncrypt()" title="Encriptar y guardar en el navegador">🔒 Cifrar & Guardar</button>
+                <button onclick="decryptAndLoad()" title="Usar clave para descifrar notas">🔑 Descifrar</button>
+                <button class="alert" onclick="wipeNotes()" title="Borrar todo inmediatamente">💣 BORRADO</button>
+            </div>
+            <small style="font-size: 0.7em; color: #aaa; margin-top: 5px;">*Tus notas encriptadas se guardan en este navegador y jamás viajan por internet.</small>
+        </section>
 
-<div class="hud-box" id="info-panel">
-  <h2 id="panel-header">ALERTA CONFIRMADA</h2>
-  <span class="data-label">HORA / FUENTE</span>
-  <span class="data-value" id="panel-date" style="color: yellow;">--</span>
-  <span class="data-label">ANÁLISIS DE INTELIGENCIA</span>
-  <span class="data-value" id="panel-title" style="font-weight: bold;">--</span>
-  <button class="btn-cerrar" onclick="cerrarPanel()">CERRAR INFORME</button>
-</div>
+        <aside style="display: flex; flex-direction: column; gap: 20px;">
+            <div class="widget time-box">
+                <h2>🛰️ Tiempo de Misión</h2>
+                <div id="clock">00:00:00</div>
+                <div id="date">--/--/--</div>
+                <hr style="border:0.5px solid var(--dark-green);">
+                <span class="data-label" style="font-size: 0.8em;">CRONÓMETRO OPERATIVO</span>
+                <div id="stopwatch">00:00:00</div>
+                <div class="sw-btn-group">
+                    <button onclick="startSW()">INICIAR</button>
+                    <button onclick="stopSW()">DETENER</button>
+                    <button onclick="resetSW()">RESET</button>
+                </div>
+            </div>
 
-<div id="globeViz"></div>
+            <div class="widget" id="pass-generator">
+                <h2>🔑 Generador de Contraseñas Seguras</h2>
+                <input type="text" id="gen-password" readonly placeholder="Clave generada">
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="generatePassword()" style="font-size: 0.8em; border-color:#0088ff; color:#0088ff;">Generar Clave</button>
+                    <button onclick="copyPassword()" style="font-size: 0.8em; border-color:#fff; color:#fff;">Copiar</button>
+                </div>
+            </div>
+        </aside>
+    </main>
 
-<script src="https://unpkg.com/globe.gl"></script>
+    <script>
+        // --- RELOJ Y FECHA ---
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('clock').innerText = now.toLocaleTimeString();
+            document.getElementById('date').innerText = now.toLocaleDateString();
+        }
+        setInterval(updateClock, 1000);
+        updateClock();
 
-<script>
-// Usamos una textura oscura muy estable para evitar fallos gráficos
-const globe = Globe()(document.getElementById("globeViz"))
-  .globeImageUrl('https://unpkg.com/three-globe/example/img/earth-dark.jpg')
-  .backgroundColor("#000000")
-  .pointOfView({ lat: 30, lng: 35, altitude: 2.2 });
+        // --- BLOC DE NOTAS ENCRIPTADO (LOCALSTORAGE + AES) ---
+        // Intentar cargar notas encriptadas al abrir
+        const savedNotes = localStorage.getItem('analystNotesV1');
+        if (savedNotes) {
+            document.getElementById('note-content').value = "-- [ NOTAS DETECTADAS - ESTÁN ENCRIPTADAS ] --";
+        }
 
-const geodict = {
-    "ukraine": {lat: 48.3, lng: 35.0, pais: "Ukraine"}, "russia": {lat: 55.7, lng: 37.6, pais: "Russia"},
-    "gaza": {lat: 31.4, lng: 34.4, pais: "Israel"}, "israel": {lat: 31.5, lng: 34.8, pais: "Israel"},
-    "lebanon": {lat: 33.8, lng: 35.5, pais: "Lebanon"}, "syria": {lat: 34.8, lng: 38.9, pais: "Syria"},
-    "yemen": {lat: 15.5, lng: 44.2, pais: "Yemen"}, "iran": {lat: 32.4, lng: 53.6, pais: "Iran"},
-    "taiwan": {lat: 23.5, lng: 121.0, pais: "Taiwan"}
-};
+        // Guardar y encriptar
+        function saveAndEncrypt() {
+            const text = document.getElementById('note-content').value;
+            const key = document.getElementById('note-key').value;
 
-let puntosMapa = [];
-let paisesPolitica = [];
+            if (text.length === 0) { alert('El bloc de notas está vacío.'); return; }
+            if (key.length < 4) { alert('Por seguridad, usa una clave de al menos 4 caracteres.'); return; }
 
-// DATOS DE RESPALDO REALISTAS (Garantizan que NUNCA verás la pantalla vacía)
-const datosRespaldo = [
-    {lat: 48.3, lng: 35.0, titulo: "Ofensiva con drones detectada en sector este.", tipo: "MILITAR", color: "#ff003c", fecha: "INTEL SECRETA"},
-    {lat: 31.4, lng: 34.4, titulo: "Operaciones tácticas y bombardeos en zona urbana.", tipo: "MILITAR", color: "#ff003c", fecha: "INTEL SECRETA"},
-    {lat: 15.5, lng: 44.2, titulo: "Interceptación de proyectiles en el Mar Rojo.", tipo: "MILITAR", color: "#ff003c", fecha: "INTEL SECRETA"},
-    {lat: 48.85, lng: 2.35, titulo: "Manifestaciones masivas bloquean principales vías logísticas.", tipo: "SOCIAL", color: "#ffaa00", fecha: "INTEL SECRETA"},
-    {lat: -34.6, lng: -58.3, titulo: "Enfrentamientos sindicales con fuerzas de seguridad.", tipo: "SOCIAL", color: "#ffaa00", fecha: "INTEL SECRETA"}
-];
-
-async function escanearNoticias() {
-    try {
-        const query = encodeURIComponent('(war OR attack OR strike OR protest OR riot OR election) when:1d');
-        const url = `https://api.rss2json.com/v1/api.json?rss_url=https%3A%2F%2Fnews.google.com%2Frss%2Fsearch%3Fq%3D${query}%26hl%3Den-US`;
-        
-        const res = await fetch(url);
-        const json = await res.json();
-        
-        if(json.status !== 'ok') throw new Error("API Bloqueada");
-
-        json.items.forEach(item => {
-            const titulo = item.title.toLowerCase();
-            let matchedGeo = null;
-
-            for (let key in geodict) {
-                if (titulo.includes(key)) {
-                    matchedGeo = geodict[key];
-                    break;
-                }
+            try {
+                // Encriptar AES usando la librería CryptoJS
+                const encrypted = CryptoJS.AES.encrypt(text, key).toString();
+                // Guardar en LocalStorage (la memoria de tu navegador)
+                localStorage.setItem('analystNotesV1', encrypted);
+                document.getElementById('note-key').value = ''; // Limpiar campo clave
+                alert('Notas encriptadas y guardadas localmente.');
+            } catch (e) {
+                alert('Fallo en la encriptación.');
             }
+        }
 
-            if (matchedGeo) {
-                let tipo = "POLÍTICA"; let color = "#0088ff"; 
-                if (titulo.match(/attack|war|strike|missile|idf|troops|killed|bomb/)) {
-                    tipo = "MILITAR"; color = "#ff003c";
-                } else if (titulo.match(/protest|riot|demonstration|clash/)) {
-                    tipo = "SOCIAL"; color = "#ffaa00";
-                }
+        // Desencriptar y cargar
+        function decryptAndLoad() {
+            const encryptedNotes = localStorage.getItem('analystNotesV1');
+            const key = document.getElementById('note-key').value;
 
-                if (tipo === "POLÍTICA") {
-                    if (!paisesPolitica.includes(matchedGeo.pais)) paisesPolitica.push(matchedGeo.pais);
+            if (!encryptedNotes) { alert('No hay notas guardadas en este navegador.'); return; }
+            if (key.length < 4) { alert('Introduce una clave válida.'); return; }
+
+            try {
+                // Desencriptar AES
+                const bytes = CryptoJS.AES.decrypt(encryptedNotes, key);
+                const decrypted = bytes.toString(CryptoJS.enc.Utf8);
+
+                if (decrypted) {
+                    document.getElementById('note-content').value = decrypted;
+                    alert('Notas descifradas con éxito.');
                 } else {
-                    const existe = puntosMapa.find(p => p.lat === matchedGeo.lat && p.tipo === tipo);
-                    if (!existe) {
-                        puntosMapa.push({
-                            lat: matchedGeo.lat + (Math.random()*0.5 - 0.25), lng: matchedGeo.lng + (Math.random()*0.5 - 0.25),
-                            titulo: item.title.split(" - ")[0], tipo: tipo, color: color, fecha: item.pubDate
-                        });
-                    }
+                    alert('Clave incorrecta. El descifrado ha fallado.');
+                    document.getElementById('note-content').value = "-- [ CLAVE INCORRECTA ] --";
                 }
+            } catch (e) {
+                alert('Clave incorrecta. Fallo crítico de descifrado.');
             }
-        });
+        }
 
-        if (puntosMapa.length === 0) throw new Error("Filtro vacío");
-        
-        dibujarSistema(puntosMapa, paisesPolitica);
-        sysLog("CONEXIÓN SATELITAL EN LÍNEA (DATOS LIVE)", "#00ff9d");
+        // Borrado de emergencia
+        function wipeNotes() {
+            if (confirm("⚠️ ¿Estás seguro? Se borrarán las notas encriptadas para siempre.")) {
+                localStorage.removeItem('analystNotesV1');
+                document.getElementById('note-content').value = "";
+                document.getElementById('note-key').value = "";
+                alert('Bases de datos locales eliminadas.');
+            }
+        }
 
-    } catch (e) {
-        // SI LA RED FALLA O TE BLOQUEA, CARGAMOS EL RESPALDO TÁCTICO
-        paisesPolitica = ["United Kingdom", "Venezuela"]; // Simulamos países en crisis
-        dibujarSistema(datosRespaldo, paisesPolitica);
-        sysLog("RED BLOQUEADA - USANDO ENLACE TÁCTICO DE RESPALDO", "#ffaa00");
-    }
-}
+        // --- CRONÓMETRO DE OPERACIÓN ---
+        let swInterval;
+        let swTime = 0; // segundos
+        function formatTime(t) { return new Date(t * 1000).toISOString().substr(11, 8); }
+        function startSW() { if(!swInterval) swInterval = setInterval(() => { swTime++; document.getElementById('stopwatch').innerText = formatTime(swTime); }, 1000); }
+        function stopSW() { clearInterval(swInterval); swInterval = null; }
+        function resetSW() { stopSW(); swTime = 0; document.getElementById('stopwatch').innerText = "00:00:00"; }
 
-function dibujarSistema(puntos, paisesAzules) {
-    // 1. Puntos y Radares
-    globe.pointsData(puntos)
-      .pointColor("color").pointAltitude(0.08).pointRadius(1.2).pointResolution(32)
-      .pointLabel(d => `<div style="background:rgba(0,0,0,0.9); padding:5px; border:1px solid ${d.color}; color:white; font-family:monospace;">[${d.tipo}] ${d.titulo}</div>`)
-      .onPointClick((point) => {
-          if (!point) return;
-          document.getElementById("info-panel").style.display = "block";
-          document.getElementById("panel-header").innerText = `ALERTA: ${point.tipo}`;
-          document.getElementById("panel-header").style.color = point.color;
-          document.getElementById("panel-date").innerText = point.fecha;
-          document.getElementById("panel-title").innerText = point.titulo;
-      });
-
-    globe.ringsData(puntos.filter(p => p.tipo === "MILITAR"))
-      .ringColor("color").ringMaxRadius(4).ringPropagationSpeed(1.5).ringRepeatPeriod(1200);
-
-    // 2. Países Políticos (Azules)
-    fetch('https://raw.githubusercontent.com/vasturiano/globe.gl/master/example/datasets/ne_110m_admin_0_countries.geojson')
-      .then(res => res.json())
-      .then(countries => {
-        globe.polygonsData(countries.features)
-          .polygonCapColor(d => paisesAzules.includes(d.properties.ADMIN) ? 'rgba(0, 136, 255, 0.4)' : 'rgba(0,0,0,0)')
-          .polygonSideColor(() => 'rgba(0, 255, 157, 0.05)')
-          .polygonStrokeColor(d => paisesAzules.includes(d.properties.ADMIN) ? '#0088ff' : '#111')
-          .polygonLabel(d => paisesAzules.includes(d.properties.ADMIN) ? `<div style="background:rgba(0,0,0,0.9); border:1px solid #0088ff; color:white; padding:5px; font-family:monospace;">⚠️ CRISIS POLÍTICA: ${d.properties.ADMIN}</div>` : '');
-      });
-}
-
-function cerrarPanel() { document.getElementById("info-panel").style.display = "none"; }
-function sysLog(msg, color) { 
-    document.getElementById("sys-status").innerText = msg; 
-    document.getElementById("sys-status").style.color = color; 
-}
-
-globe.onPointHover(p => document.body.style.cursor = p ? "crosshair" : "default");
-
-escanearNoticias();
-setInterval(escanearNoticias, 300000);
-</script>
+        // --- GENERADOR DE CLAVES (SECCIÓN LOCAL) ---
+        function generatePassword() {
+            const length = 24;
+            const charset = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*()_+=-[]{};:,.<>?";
+            let retVal = "";
+            for (let i = 0, n = charset.length; i < length; ++i) {
+                retVal += charset.charAt(Math.floor(Math.random() * n));
+            }
+            document.getElementById('gen-password').value = retVal;
+        }
+        function copyPassword() {
+            const passField = document.getElementById('gen-password');
+            passField.select();
+            passField.setSelectionRange(0, 99999);
+            navigator.clipboard.writeText(passField.value);
+            alert("Contraseña copiada al portapapeles.");
+        }
+    </script>
 </body>
 </html>
