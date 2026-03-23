@@ -2,17 +2,23 @@
 <html lang="es">
 <head>
 <meta charset="UTF-8">
-<title>WAR ROOM - SAT-SIM TERMINAL V8.1</title>
+<title>WAR ROOM - SAT-SIM TERMINAL V8.2</title>
 <style>
   body { margin: 0; background: #000; color: #00ff9d; font-family: 'Courier New', monospace; overflow: hidden; user-select: none; }
+  
+  /* Efecto de pantalla CRT */
   body::after { content: " "; display: block; position: absolute; top: 0; left: 0; bottom: 0; right: 0; background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06)); z-index: 2; background-size: 100% 2px, 3px 100%; pointer-events: none; opacity: 0.6; }
+
+  /* ¡AQUÍ ESTABA MI ERROR! Esta línea hace que el mapa sea visible */
+  #globeViz { width: 100vw; height: 100vh; position: absolute; top: 0; left: 0; z-index: 1; }
 
   .hud-box { position: absolute; background: rgba(0, 20, 0, 0.9); border: 1px solid #00ff9d; box-shadow: 0 0 15px rgba(0,255,157,0.2); z-index: 10; padding: 15px; border-radius: 3px; }
   #hud-main { top: 20px; left: 20px; border-left: 4px solid #00ff9d; max-width: 350px; }
   .leyenda { margin-top: 15px; font-size: 0.75em; border-top: 1px solid #00ff9d; padding-top: 10px; }
   .leyenda div { margin-bottom: 5px; }
   .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; }
-  #info-panel { top: 20px; right: 20px; width: 350px; display: none; border-right: 4px solid #fff; border-left: 1px solid #fff; color: #fff; background: rgba(0, 0, 0, 0.95); }
+  
+  #info-panel { top: 20px; right: 20px; width: 350px; display: none; border-right: 4px solid #fff; border-left: 1px solid #fff; color: #fff; background: rgba(0, 0, 0, 0.95); z-index: 10; position: absolute;}
   #info-panel h2 { color: #fff; text-shadow: 0 0 5px #fff; border-bottom: 1px solid #444; padding-bottom: 10px; font-size: 1.2em; margin-top:0;}
   .data-label { color: #00ff9d; font-weight: bold; font-size: 0.8em; margin-top: 10px; display: block; }
   .data-value { color: #ddd; font-size: 0.9em; margin-bottom: 10px; display: block; line-height: 1.4; }
@@ -23,10 +29,10 @@
 <body>
 
 <div class="hud-box" id="hud-main">
-  <b style="font-size: 1.2em;">🛰️ SAT-SIM TERMINAL V8.1</b><br>
+  <b style="font-size: 1.2em;">🛰️ SAT-SIM TERMINAL V8.2</b><br>
   <span style="font-size: 0.8em; color: #aaa;">OFFLINE: MECÁNICA ORBITAL</span><br>
   <div style="margin-top: 10px; font-size: 0.8em;">
-    ESTADO: <span id="sys-status" style="color: #00ff9d;">EJECUTANDO SIMULACIÓN FÍSICA PURE...</span>
+    ESTADO: <span id="sys-status" style="color: #00ff9d;">SIMULACIÓN FÍSICA ACTIVA</span>
   </div>
   <div class="leyenda">
     <div><span class="dot" style="background: #ff003c;"></span> LEO (Baja: ISS, Sat-Espía)</div>
@@ -49,15 +55,14 @@
 <script src="https://unpkg.com/globe.gl"></script>
 
 <script>
-// Usamos la textura HD para que se vea nítida al hacer zoom
+// Inicializar la Tierra
 const globe = Globe()(document.getElementById("globeViz"))
   .globeImageUrl("https://unpkg.com/three-globe/example/img/earth-water.png")
   .bumpImageUrl("https://unpkg.com/three-globe/example/img/earth-topology.png")
   .backgroundColor("#000000")
   .pointOfView({ lat: 25, lng: 35, altitude: 2.2 });
 
-// --- DEFINICIÓN DE ÓRBITAS (Kepler puro, sin Wifi) ---
-// r = Semieje mayor (km), i = Inclinación (deg), t_p = Período (seg), color
+// Definición de las 5 órbitas con matemáticas puras
 const simulacionOrbitas = [
   { id: "ISS", r: 6371 + 408, i: 51.6, t_p: 5540, color: "#ff003c" },
   { id: "GPS-A1", r: 6371 + 20200, i: 55, t_p: 43200, color: "#ffaa00" },
@@ -66,30 +71,25 @@ const simulacionOrbitas = [
   { id: "SPY-SAT-5", r: 6371 + 250, i: 95.1, t_p: 5370, color: "#ff003c" }
 ];
 
-// Generar las trayectorias de las órbitas (curvas fijas)
+// Dibujar las líneas (los aros de las órbitas)
 function generarCurvaOrbital(r, i) {
     const coords = [];
     const radIncl = i * Math.PI / 180;
-    const radioNormalizado = (r - 6371) / 3000; // Ajuste visual de altitud
-    for (let angle = 0; angle <= 360; angle += 1) {
+    const radioNormalizado = (r - 6371) / 3000; 
+    for (let angle = 0; angle <= 360; angle += 2) {
         const radAngle = angle * Math.PI / 180;
-        // Matemáticas para rotar el plano orbital
         let x = radioNormalizado * Math.cos(radAngle);
         let y = radioNormalizado * Math.sin(radAngle);
-        // Rotación por inclinación
         const yNew = y * Math.cos(radIncl);
         const zNew = y * Math.sin(radIncl);
-        
-        // Conversión a Lat/Lng/Alt para el globo
         const alt = Math.sqrt(x*x + zNew*zNew);
         const lat = Math.atan2(yNew, alt) * 180 / Math.PI;
         const lng = Math.atan2(zNew, x) * 180 / Math.PI;
-        coords.push([lat, lng, radioNormalizado * 0.1]); // Pequeña altitud visual
+        coords.push([lat, lng, radioNormalizado * 0.1]); 
     }
     return coords;
 }
 
-// Pintar las líneas de órbita fijos
 globe.pathsData(simulacionOrbitas.map(d => ({
     coords: generarCurvaOrbital(d.r, d.i),
     color: d.color,
@@ -99,21 +99,18 @@ globe.pathsData(simulacionOrbitas.map(d => ({
   .pathDashLength(0.01)
   .pathDashGap(0.005)
   .pathDashAnimateTime(5000)
-  .pathStroke(1);
+  .pathStroke(1.5);
 
-// Calcular la posición exacta de cada satélite basándose en el tiempo actual
+// Animar los puntos (satélites) alrededor de la Tierra
 function calcularPosicionesSatelites() {
-    const time = Date.now() / 1000; // Segundos
+    const time = Date.now() / 1000; 
     const puntosActuales = simulacionOrbitas.map(orb => {
-        // Cálculo del ángulo orbital (Kepler simplified: ω * t)
-        const angularVelocity = (2 * Math.PI) / orb.t_p; // Rad/sec
-        const angle = angularVelocity * time; // Radianes
+        const angularVelocity = (2 * Math.PI) / orb.t_p; 
+        const angle = angularVelocity * time * 50; // Acelerado un poco para que veas el movimiento
         const radIncl = orb.i * Math.PI / 180;
         
-        // Matemáticas de rotación orbital
         let x = Math.cos(angle);
         let y = Math.sin(angle);
-        
         const yNew = y * Math.cos(radIncl);
         const zNew = y * Math.sin(radIncl);
         
@@ -122,42 +119,32 @@ function calcularPosicionesSatelites() {
         const lng = Math.atan2(zNew, x) * 180 / Math.PI;
 
         return {
-            lat: lat,
-            lng: lng,
-            name: orb.id,
-            color: orb.color,
-            alt_actual: orb.r,
-            velocidad: Math.sqrt(398600 / orb.r) // v = √(GM/r) km/s
+            lat: lat, lng: lng, name: orb.id, color: orb.color, alt_actual: orb.r,
+            velocidad: Math.sqrt(398600 / orb.r) 
         };
     });
 
-    // Actualizar los puntos en el mapa
     globe.pointsData(puntosActuales)
       .pointColor("color")
-      .pointAltitude(p => (p.alt_actual - 6371) / 3000 * 0.1) // Ajuste visual altitud
-      .pointRadius(1)
+      .pointAltitude(p => (p.alt_actual - 6371) / 3000 * 0.1) 
+      .pointRadius(1.5)
       .pointResolution(32)
-      .pointLabel(p => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid ${p.color}; color:white; font-family:monospace;">🛰️ ${p.name} (MODO OFFLINE)</div>`)
+      .pointLabel(p => `<div style="background:rgba(0,0,0,0.8); padding:5px; border:1px solid ${p.color}; color:white; font-family:monospace;">🛰️ ${p.name}</div>`)
       .onPointClick((p) => {
           if (!p) return;
           document.getElementById("info-panel").style.display = "block";
           document.getElementById("panel-header").innerText = `INFORME: ${p.name}`;
           document.getElementById("panel-header").style.color = p.color;
-          document.getElementById("panel-title").innerHTML = `
-            Semieje Mayor: ${p.alt_actual.toFixed(1)} km<br>
-            Altitud: ${(p.alt_actual - 6371).toFixed(1)} km<br>
-            Inclinación: ${simulacionOrbitas.find(o=>o.id===p.name).i}°
-          `;
-          document.getElementById("panel-desc").innerText = `${p.velocidad.toFixed(2)} km/s (Relatividad Especial)`;
+          document.getElementById("panel-title").innerHTML = `Altitud: ${(p.alt_actual - 6371).toFixed(1)} km<br>Inclinación: ${simulacionOrbitas.find(o=>o.id===p.name).i}°`;
+          document.getElementById("panel-desc").innerText = `${p.velocidad.toFixed(2)} km/s`;
       });
 }
 
-globe.onPointHover(p => document.body.style.cursor = p ? "crosshair" : "default");
-
-// Actualizar posiciones cada 50 milisegundos para simular movimiento suave
-setInterval(calcularPosicionesSatelites, 50);
+// Bucle de animación
+setInterval(calcularPosicionesSatelites, 100);
 
 function cerrarPanel() { document.getElementById("info-panel").style.display = "none"; }
+globe.onPointHover(p => document.body.style.cursor = p ? "crosshair" : "default");
 </script>
 </body>
 </html>
